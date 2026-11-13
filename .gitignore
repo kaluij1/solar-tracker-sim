@@ -1,0 +1,2 @@
+tests/closed_loop_test
+tests/*.o

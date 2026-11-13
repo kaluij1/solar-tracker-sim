@@ -1,0 +1,12 @@
+{
+  "name": "Sun + Sensor Head",
+  "author": "Jay Kaluiji",
+  "pins": ["PWM", "EAST", "WEST", "GND"],
+  "controls": [
+    { "id": "sunAngle",    "label": "Sun angle (deg, + = east)", "type": "range", "min": -80, "max": 80,    "step": 1 },
+    { "id": "sunLux",      "label": "Sun brightness (lux)",      "type": "range", "min": 10,  "max": 20000, "step": 10 },
+    { "id": "cloudCover",  "label": "Cloud cover (%)",           "type": "range", "min": 0,   "max": 80,    "step": 1 },
+    { "id": "reflections", "label": "Reflection flicker (%)",    "type": "range", "min": 0,   "max": 30,    "step": 1 }
+  ],
+  "display": { "width": 160, "height": 120 }
+}

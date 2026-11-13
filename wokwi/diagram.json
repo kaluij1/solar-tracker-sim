@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "author": "Jay Kaluiji",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-arduino-uno", "id": "uno", "top": 0, "left": 0, "attrs": {} },
+    {
+      "type": "chip-sun-sensor-head",
+      "id": "plant",
+      "top": -230,
+      "left": 60,
+      "attrs": { "sunAngle": "30", "sunLux": "400", "cloudCover": "0", "reflections": "0" }
+    },
+    { "type": "wokwi-servo", "id": "servo", "top": 260, "left": 330, "attrs": {} }
+  ],
+  "connections": [
+    [ "plant:EAST", "uno:A0", "green", [] ],
+    [ "plant:WEST", "uno:A1", "blue", [] ],
+    [ "plant:PWM", "uno:9", "orange", [] ],
+    [ "plant:GND", "uno:GND.1", "black", [] ],
+    [ "uno:5V", "servo:V+", "red", [] ],
+    [ "uno:GND.3", "servo:GND", "black", [] ],
+    [ "uno:9", "servo:PWM", "orange", [] ]
+  ],
+  "dependencies": {}
+}
