@@ -1,2 +1,2 @@
-tests/closed_loop_test
-tests/*.o
+**/tests/closed_loop_test
+*.o

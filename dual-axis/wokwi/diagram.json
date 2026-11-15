@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "author": "Jay Kaluiji",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-arduino-uno", "id": "uno", "top": 0, "left": 0, "attrs": {} },
+    {
+      "type": "chip-sun-sensor-head-2d",
+      "id": "plant",
+      "top": -230,
+      "left": 40,
+      "attrs": { "dayLength": "0", "latitude": "45", "declination": "0", "sunAzimuth": "30", "sunElevation": "40", "sunLux": "400", "cloudCover": "0", "reflections": "0" }
+    },
+    { "type": "wokwi-servo", "id": "pan", "top": 250, "left": 330, "attrs": {} },
+    { "type": "wokwi-servo", "id": "tilt", "top": 340, "left": 330, "attrs": {} }
+  ],
+  "connections": [
+    [ "plant:TOP_E", "uno:A0", "green", [] ],
+    [ "plant:TOP_W", "uno:A1", "blue", [] ],
+    [ "plant:BOT_E", "uno:A2", "green", [] ],
+    [ "plant:BOT_W", "uno:A3", "blue", [] ],
+    [ "plant:PAN", "uno:9", "orange", [] ],
+    [ "plant:TILT", "uno:10", "purple", [] ],
+    [ "plant:GND", "uno:GND.1", "black", [] ],
+    [ "uno:5V", "pan:V+", "red", [] ],
+    [ "uno:GND.3", "pan:GND", "black", [] ],
+    [ "uno:9", "pan:PWM", "orange", [] ],
+    [ "uno:5V", "tilt:V+", "red", [] ],
+    [ "uno:GND.3", "tilt:GND", "black", [] ],
+    [ "uno:10", "tilt:PWM", "purple", [] ]
+  ],
+  "dependencies": {}
+}

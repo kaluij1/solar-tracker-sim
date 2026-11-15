@@ -1,0 +1,16 @@
+{
+  "name": "Sun + Sensor Head (dual axis)",
+  "author": "Jay Kaluiji",
+  "pins": ["PAN", "TILT", "GND", "", "TOP_E", "TOP_W", "BOT_E", "BOT_W"],
+  "controls": [
+    { "id": "dayLength",    "label": "Day length (s, 0 = manual sun)", "type": "range", "min": 0,     "max": 600,   "step": 10 },
+    { "id": "latitude",     "label": "Latitude (deg)",                 "type": "range", "min": 0,     "max": 60,    "step": 1 },
+    { "id": "declination",  "label": "Season: sun declination (deg)",  "type": "range", "min": -23.4, "max": 23.4,  "step": 0.1 },
+    { "id": "sunAzimuth",   "label": "Manual sun azimuth (deg, + = east of south)", "type": "range", "min": -90, "max": 90, "step": 1 },
+    { "id": "sunElevation", "label": "Manual sun elevation (deg)",     "type": "range", "min": 0,     "max": 90,    "step": 1 },
+    { "id": "sunLux",       "label": "Sun brightness (lux)",           "type": "range", "min": 10,    "max": 20000, "step": 10 },
+    { "id": "cloudCover",   "label": "Cloud cover (%)",                "type": "range", "min": 0,     "max": 80,    "step": 1 },
+    { "id": "reflections",  "label": "Reflection flicker (%)",         "type": "range", "min": 0,     "max": 30,    "step": 1 }
+  ],
+  "display": { "width": 200, "height": 100 }
+}
