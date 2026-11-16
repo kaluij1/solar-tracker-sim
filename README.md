@@ -1,6 +1,6 @@
 # Is Solar Tracking Worth It?
 
-**From a twitching student prototype to a question the solar industry actually asks.**
+**From a twitching student prototype to a question the solar industry actually asks, and an answer that turned out much closer than the industry's choices suggest.**
 
 In my second year at St. Olaf, I worked on a team of five building a dual axis solar
 tracker: four photoresistors, two servos, and an Arduino that turned the panel toward
@@ -37,13 +37,14 @@ with the pvlib model within 0.57% over a full year (see [`web-sim/README.md`](we
 | Single axis tracking vs fixed tilt | +25% | +18% |
 | Dual axis tracking vs fixed tilt | +40% | +35% |
 | Tracker on a home | Does not pay off | Does not pay off |
-| Single axis tracker on a solar farm | Pays off at 2025 prices | Only if very cheap |
+| Single axis tracker on a solar farm, rows with backtracking | Roughly even, on energy alone: worth $0.10/W vs a $0.11/W like-for-like price | No: worth $0.03/W |
 
-Energy rows: [`energy-yield/results/summary.csv`](energy-yield/results/summary.csv). Verdicts: [`energy-yield/results/economics.csv`](energy-yield/results/economics.csv).
+Energy rows: [`energy-yield/results/summary.csv`](energy-yield/results/summary.csv). Verdicts: [`energy-yield/results/economics.csv`](energy-yield/results/economics.csv) and [`energy-yield/results/cost_check.csv`](energy-yield/results/cost_check.csv).
 
 * **Tilting adds a lot of energy, and it added more at the more northern site** (+21% in Des Moines vs +15% in Phoenix).[^r-summary] This fits the textbook result that a fixed panel collects the most energy over a year when tilted at about the site's latitude.[^pvedu-tilt]
 * **Trackers don't pay off on homes.** In Phoenix the extra energy justifies at most $0.57/W extra for a single axis tracker over 25 years,[^r-econ] but trackers add 40 to 100% to a system's cost,[^es-trackers] which is $1.26 to $3.15/W on a $3.15/W home system.[^nrel-bench]
-* **On solar farms, single axis tracking now costs almost the same as fixed racking:** $1.31 vs $1.30 per watt (DC) for US projects built in 2025.[^lbl2026] The extra energy in Phoenix is worth up to $0.14/W for a tracker standing alone,[^r-econ] and about $0.10/W in rows that shade each other and backtrack ([`energy-yield/results/rows.csv`](energy-yield/results/rows.csv), at an assumed 35% ground cover), so it pays off. 96% of new US utility solar capacity in 2025 used single axis trackers.[^lbl2026]
+* **On solar farms, the energy alone roughly breaks even with the tracker's cost.** Farm trackers stand in rows and backtrack to avoid shading each other, which cuts the Phoenix gain from 25% to about 19%. The extra energy is then worth about $0.10/W over 25 years ([`energy-yield/results/rows.csv`](energy-yield/results/rows.csv), at an assumed 35% ground cover). SEIA and Wood Mackenzie's like-for-like 2026 price for single axis tracking is $0.11/W more than fixed tilt.[^seia-q3] (Berkeley Lab's $0.01/W for 2025 projects compares different projects and does not control for size or location.[^lbl2026])
+* **Yet 96% of new US utility solar capacity in 2025 used single axis trackers.**[^lbl2026] When a model disagrees with an industry, the model is probably missing something. The likeliest gap is timing: this model values every kWh the same, but trackers produce more in the morning and late afternoon, when power is worth more.[^lbl-value] Valuing energy by the hour is the next step.
 * **The controller barely changes energy, but it changes wear.** Even the worst light-sensor controller loses under 0.2% of a year's energy, while the unfiltered one moves the motors 12 times as often as a controller that calculates the sun's position.[^r-ctrl] Calculating the sun's position and confirming the panel angle with a tilt sensor (inclinometer) is how commercial trackers are described as pointing, partly because light sensors stop giving usable feedback when clouds cover the sun.[^fredericks]
 
 Full results, assumptions and sources: [`energy-yield/README.md`](energy-yield/README.md).
@@ -263,3 +264,5 @@ Requires gcc or clang. `common/wokwi-api.h` is from [wokwi/inverter-chip](https:
 [^r-ctrl]: This repository: [`energy-yield/results/controller_energy.csv`](energy-yield/results/controller_energy.csv), produced by [`energy-yield/controller_energy.py`](energy-yield/controller_energy.py) from the dual axis test and the pointing error curve.
 [^r-single]: This repository: output of [`single-axis/tests/closed_loop_test.c`](single-axis/tests/closed_loop_test.c) (`make test`), which runs the v1 chip against a copy of the sketch's logic.
 [^r-dual]: This repository: output of [`dual-axis/tests/closed_loop_test.c`](dual-axis/tests/closed_loop_test.c) (`make test`; `./closed_loop_test --csv` writes [`energy-yield/results/hil_dual_axis.csv`](energy-yield/results/hil_dual_axis.csv)).
+[^seia-q3]: SEIA and Wood Mackenzie, *US Solar Market Insight Q3 2026*, executive summary, Sept. 2026: Q2 2026 modeled utility-scale prices of $0.95/W DC fixed-tilt and $1.06/W DC single-axis tracking. <https://tecsol-quotidien.fr/wp-content/uploads/2026/09/USSMI_Q3_2026_ES.pdf> (SOURCES.md #40)
+[^lbl-value]: J. H. Kim, A. D. Mills, R. Wiser et al., "Project developer options to enhance the value of solar electricity as solar and storage penetrations increase," Berkeley Lab, Sept. 2021: tracking and similar options shift "solar production to higher-priced hours in the mornings and, especially, in late afternoons to evening." <https://emp.lbl.gov/news/project-developer-options-enhance-value-solar>

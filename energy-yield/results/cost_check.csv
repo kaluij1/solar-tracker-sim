@@ -1,0 +1,37 @@
+site,case,gain_vs_fixed_pct,price_per_mwh,discount_rate_pct,breakeven_premium_per_w,pays_at_0.01,pays_at_0.11,pays_at_0.20
+"Des Moines, IA","Single axis, standing alone",17.82313788062546,25.0,4.0,0.060201320068029036,True,False,False
+"Des Moines, IA","Single axis, standing alone",17.82313788062546,25.0,6.0,0.049488068410055874,True,False,False
+"Des Moines, IA","Single axis, standing alone",17.82313788062546,25.0,8.0,0.04149919043201505,True,False,False
+"Des Moines, IA","Single axis, standing alone",17.82313788062546,30.0,4.0,0.07818882286902443,True,False,False
+"Des Moines, IA","Single axis, standing alone",17.82313788062546,30.0,6.0,0.06427456757877544,True,False,False
+"Des Moines, IA","Single axis, standing alone",17.82313788062546,30.0,8.0,0.053898699334666775,True,False,False
+"Des Moines, IA","Single axis, standing alone",17.82313788062546,35.0,4.0,0.09617632567001984,True,False,False
+"Des Moines, IA","Single axis, standing alone",17.82313788062546,35.0,6.0,0.07906106674749502,True,False,False
+"Des Moines, IA","Single axis, standing alone",17.82313788062546,35.0,8.0,0.06629820823731851,True,False,False
+"Des Moines, IA","Single axis in rows, backtracking (GCR 0.35)",10.89112523663307,25.0,4.0,0.025221621856219765,True,False,False
+"Des Moines, IA","Single axis in rows, backtracking (GCR 0.35)",10.89112523663307,25.0,6.0,0.020733255457234173,True,False,False
+"Des Moines, IA","Single axis in rows, backtracking (GCR 0.35)",10.89112523663307,25.0,8.0,0.017386278028999454,True,False,False
+"Des Moines, IA","Single axis in rows, backtracking (GCR 0.35)",10.89112523663307,30.0,4.0,0.036213185014853315,True,False,False
+"Des Moines, IA","Single axis in rows, backtracking (GCR 0.35)",10.89112523663307,30.0,6.0,0.029768792035389402,True,False,False
+"Des Moines, IA","Single axis in rows, backtracking (GCR 0.35)",10.89112523663307,30.0,8.0,0.02496320445104806,True,False,False
+"Des Moines, IA","Single axis in rows, backtracking (GCR 0.35)",10.89112523663307,35.0,4.0,0.047204748173486875,True,False,False
+"Des Moines, IA","Single axis in rows, backtracking (GCR 0.35)",10.89112523663307,35.0,6.0,0.038804328613544645,True,False,False
+"Des Moines, IA","Single axis in rows, backtracking (GCR 0.35)",10.89112523663307,35.0,8.0,0.032540130873096686,True,False,False
+"Phoenix, AZ","Single axis, standing alone",24.975259604746626,25.0,4.0,0.13578244175886156,True,True,False
+"Phoenix, AZ","Single axis, standing alone",24.975259604746626,25.0,6.0,0.11161899372062997,True,True,False
+"Phoenix, AZ","Single axis, standing alone",24.975259604746626,25.0,8.0,0.09360029649694476,True,False,False
+"Phoenix, AZ","Single axis, standing alone",24.975259604746626,30.0,4.0,0.16888616889802344,True,True,False
+"Phoenix, AZ","Single axis, standing alone",24.975259604746626,30.0,6.0,0.13883167795146434,True,True,False
+"Phoenix, AZ","Single axis, standing alone",24.975259604746626,30.0,8.0,0.11642002661258243,True,True,False
+"Phoenix, AZ","Single axis, standing alone",24.975259604746626,35.0,4.0,0.2019898960371854,True,True,True
+"Phoenix, AZ","Single axis, standing alone",24.975259604746626,35.0,6.0,0.16604436218229876,True,True,False
+"Phoenix, AZ","Single axis, standing alone",24.975259604746626,35.0,8.0,0.13923975672822014,True,True,False
+"Phoenix, AZ","Single axis in rows, backtracking (GCR 0.35)",18.924103231735877,25.0,4.0,0.09567958945247794,True,False,False
+"Phoenix, AZ","Single axis in rows, backtracking (GCR 0.35)",18.924103231735877,25.0,6.0,0.07865272826110159,True,False,False
+"Phoenix, AZ","Single axis in rows, backtracking (GCR 0.35)",18.924103231735877,25.0,8.0,0.06595578799033795,True,False,False
+"Phoenix, AZ","Single axis in rows, backtracking (GCR 0.35)",18.924103231735877,30.0,4.0,0.12076274613036313,True,True,False
+"Phoenix, AZ","Single axis in rows, backtracking (GCR 0.35)",18.924103231735877,30.0,6.0,0.09927215940003029,True,False,False
+"Phoenix, AZ","Single axis in rows, backtracking (GCR 0.35)",18.924103231735877,30.0,8.0,0.08324661640465426,True,False,False
+"Phoenix, AZ","Single axis in rows, backtracking (GCR 0.35)",18.924103231735877,35.0,4.0,0.14584590280824833,True,True,False
+"Phoenix, AZ","Single axis in rows, backtracking (GCR 0.35)",18.924103231735877,35.0,6.0,0.11989159053895902,True,True,False
+"Phoenix, AZ","Single axis in rows, backtracking (GCR 0.35)",18.924103231735877,35.0,8.0,0.1005374448189706,True,False,False

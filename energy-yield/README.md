@@ -26,13 +26,14 @@ CEC module and inverter databases that NREL's System Advisor Model and pvlib use
 | Single axis vs fixed tilt | **+25%** | **+18%** |
 | Dual axis vs fixed tilt | **+40%** | **+35%** |
 | Home tracker pays off? | No | No |
-| Utility single axis tracker pays off? | Yes, at 2025 prices | Only if very cheap |
+| Utility single axis tracker pays off on energy alone? | Roughly even: in farm rows, worth $0.10/W vs a $0.11/W like-for-like price | No: worth $0.03/W in rows |
 
-Energy rows: [`results/summary.csv`](results/summary.csv). Verdicts: [`results/economics.csv`](results/economics.csv).
+Energy rows: [`results/summary.csv`](results/summary.csv). Verdicts: [`results/economics.csv`](results/economics.csv) and [`results/cost_check.csv`](results/cost_check.csv).
 
 * **Tilting adds 15 to 21% over lying flat,** and the gain was larger at the more northern site.[^r-summary]
 * **For homes, trackers don't pay off.** In Phoenix the extra energy justifies at most $0.57/W extra for single axis (or $1.05/W for dual axis) over 25 years,[^r-econ] while trackers add 40 to 100% to a system's cost,[^es-trackers] or $1.26 to $3.15/W on a $3.15/W home system.[^nrel-bench]
-* **For solar farms, single axis tracking pays off because it now costs about the same as fixed racking:** $1.31/W DC with trackers vs $1.30/W DC fixed, for US projects built in 2025.[^lbl2026] The extra energy in Phoenix would justify up to $0.14/W.[^r-econ] In rows with backtracking that falls to $0.10/W (part 4), still well above the premium.[^r-rows] That is consistent with 96% of new US utility solar capacity in 2025 using single axis trackers.[^lbl2026]
+* **For solar farms, the extra energy roughly breaks even with the tracker's cost.** In realistic rows that backtrack (part 4), the extra energy in Phoenix is worth $0.10/W over 25 years.[^r-rows] SEIA and Wood Mackenzie's like-for-like 2026 price puts single axis tracking at $0.11/W more than fixed tilt.[^seia-q3] Phoenix rows break even in only 3 of 9 combinations of contract price and discount rate, and Des Moines in none.[^r-cost] Berkeley Lab's much lower $0.01/W compares different projects and does not control for size or location.[^lbl2026] See "Which tracker price?" below.
+* **That leaves a puzzle.** 96% of new US utility solar capacity in 2025 used single axis trackers.[^lbl2026] When a model disagrees with an industry, the model is probably missing something. The likeliest gap is timing: this model values every kWh the same, but tracking shifts output toward higher-priced morning and late-afternoon hours.[^lbl-value] It also compares tracker rows against fixed panels with no rows, and leaves out tax credits and bifacial panels. Valuing energy by the hour is the next step.
 * **The controller barely matters for energy, but it matters for wear.** Even the worst light-sensor controller loses under 0.2% of a year's energy, but the unfiltered one moves the motors 12 times as often as a controller that calculates the sun's position.[^r-ctrl]
 
 ## System
@@ -153,11 +154,32 @@ Source: [`results/economics.csv`](results/economics.csv), produced by [`economic
 
 ![Break-even tracker premium](figures/breakeven.png)
 
-Why homes and solar farms reach opposite answers: a home values each kWh about five times
-more ($0.15 vs $0.03),[^es-az][^lbl2026] but a home tracker raises the system's cost by 40 to
-100%,[^es-trackers] while a utility tracker added about 1% to the cost per watt in 2025
-($1.31 vs $1.30).[^lbl2026] EnergySage also notes that trackers are generally not worth it
-for residential installations, which are usually rooftop systems.[^es-trackers]
+Why homes and solar farms differ: a home values each kWh about five times more ($0.15 vs
+$0.03),[^es-az][^lbl2026] but a home tracker raises the system's cost by 40 to 100%.[^es-trackers]
+EnergySage also notes that trackers are generally not worth it for residential
+installations, which are usually rooftop systems.[^es-trackers]
+
+### Which tracker price?
+
+The farm verdict depends on which published tracker premium you compare against, and the
+three numbers measure different things:
+
+| Premium | Source | What it measures |
+|---|---|---|
+| $0.01/W DC | Berkeley Lab, 2025 projects[^lbl2026] | Capacity-weighted average installed cost of real tracking projects ($1.31/W) minus real fixed-tilt projects ($1.30/W). Different projects; the report says it "does not control for other factors that influence total project costs (equipment, labor, land, grid interconnection, project size…)". In $/W AC, tracking projects were cheaper (1.69 vs 1.72). |
+| $0.11/W DC | SEIA / Wood Mackenzie, Q2 2026[^seia-q3] | Modeled ("bottoms-up") national average price of a utility system built with each mount: fixed-tilt $0.95/W, single-axis $1.06/W. A like-for-like comparison. |
+| $0.20/W DC | Berkeley Lab 2023 data, via NREL[^nrel-bench] | Older, from the same kind of project comparison as the first row. |
+
+For a developer deciding how to build one farm, the like-for-like $0.11/W is the fair
+comparison. [`cost_check.py`](cost_check.py) compares it with the break-even premium across
+contract prices of $25, $30 and $35/MWh[^lbl2026] and discount rates of 4, 6 and 8%:[^r-cost]
+
+| Single axis tracker | Break-even at $30/MWh, 6% | Range over the 9 cases | Pays at $0.11/W |
+|---|---|---|---|
+| Phoenix, standing alone | $0.14/W | $0.09–0.20/W | 8 of 9 cases |
+| Phoenix, rows with backtracking (GCR 0.35) | $0.10/W | $0.07–0.15/W | 3 of 9 cases |
+| Des Moines, standing alone | $0.06/W | $0.04–0.10/W | 0 of 9 |
+| Des Moines, rows with backtracking | $0.03/W | $0.02–0.05/W | 0 of 9 |
 
 ## 3. Does the controller matter?
 
@@ -207,7 +229,7 @@ What this shows:
 
 * **Rows cost real energy.** In Phoenix, backtracking rows make 4.8% less than a tracker standing alone, so the gain over fixed tilt falls from 25.0% to 18.9%. In Des Moines it falls from 17.8% to 10.9%.
 * **Why farms backtrack.** Without it, some part of a row is shaded in 27% of daylight hours in Phoenix. If the loss were only in proportion to the shaded area, pointing at the sun would still win slightly. But a shaded cell limits the whole group of cells wired with it, so the bypass diode switches that block off.[^martinez] With modules in portrait the shadow edge runs along the row and crosses all three blocks at once (assumption[^a-rows]), and then backtracking wins clearly.
-* **The answer for farms holds, with less margin.** The Phoenix break-even premium falls from $0.14/W to $0.10/W, still above the $0.01/W premium of 2025 projects.[^lbl2026] In Des Moines it falls from $0.06/W to $0.03/W.
+* **The farm answer gets much closer.** The Phoenix break-even premium falls from $0.14/W to $0.10/W, just under the $0.11/W like-for-like 2026 price.[^seia-q3] In Des Moines it falls from $0.06/W to $0.03/W (see "Which tracker price?" in part 2).
 
 The tracker angle and shaded fraction use pvlib's `tracking.singleaxis` and
 `shading.shaded_fraction1d`.[^shade1d] Only the direct beam is shaded: the neighbors also hide
@@ -251,6 +273,7 @@ python run_energy.py          # energy for both sites, dataset check, pointing e
 python run_rows.py            # single axis trackers in rows: shading and backtracking
 python validate_measured.py    # model vs measured output of a real array (downloads 114 MB)
 python economics.py           # break-even premiums and payback
+python cost_check.py          # farm break-even vs the three published tracker premiums
 python controller_energy.py   # combines the controller simulation with the energy model
 python make_figures.py        # writes figures/*.png
 ```
@@ -263,6 +286,7 @@ python make_figures.py        # writes figures/*.png
 * Row-to-row shading is modeled only for the direct beam and only for the single axis tracker (part 4); parts 1 to 3 treat every setup as standing alone, and fixed tilt rows are assumed far enough apart not to shade each other.
 * Losses use PVWatts defaults[^pvwatts] rather than measured values, and module degradation is a flat 0.5% per year (assumption).[^a-finance]
 * Electricity is valued at a flat price. Berkeley Lab notes that tracking shifts production toward higher-priced late-afternoon hours,[^lbl-value] which this model does not credit.
+* No tax credits and no bifacial (two-sided) panels; both could change the farm verdict.
 * Residential tracker costs come from a broad consumer-guide range,[^es-trackers] and the extra maintenance costs are assumptions.[^a-om]
 * The controller comparison uses a time-lapse day, a 45° latitude sun path, and modeled cloud and flicker noise (see the main README).
 
@@ -305,3 +329,5 @@ python make_figures.py        # writes figures/*.png
 [^pvdaq]: C. Deline, K. Perry, M. Deceglie, M. Muller, W. Sekulic and D. Jordan, "Photovoltaic Data Acquisition (PVDAQ) Public Datasets," Open Energy Data Initiative, NREL, 2021. <https://doi.org/10.25984/1846021> (SOURCES.md #38)
 [^rdtools]: The data file and system description are from the RdTools example for PVDAQ system 4 (SOURCES.md #39): <https://github.com/NatLabRockies/rdtools/releases/download/3.0.0/pvdaq_system_4_2010-2016_subset_soil_signal.csv>. The file also contains a synthetic soiling signal, which is not used here; `ac_power` is the measured value.
 [^r-measured]: [`results/measured_validation.csv`](results/measured_validation.csv), produced by `validate_measured.py`.
+[^seia-q3]: SEIA and Wood Mackenzie, *US Solar Market Insight Q3 2026*, executive summary, Sept. 2026. <https://tecsol-quotidien.fr/wp-content/uploads/2026/09/USSMI_Q3_2026_ES.pdf> Q2 2026 utility-scale system prices: fixed-tilt "$0.95/Wdc", single-axis tracking "$1.06/Wdc", from a "bottoms-up modeling methodology". (SOURCES.md #40)
+[^r-cost]: [`results/cost_check.csv`](results/cost_check.csv), produced by `cost_check.py`.

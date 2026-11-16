@@ -317,7 +317,7 @@
       <p class="step">Does it pay?</p>
       <h2 id="econ-title">How much extra can a tracker cost and still pay for itself?</h2>
       <div class="prose">
-        <p>The extra energy is worth money every year. Add up 25 years of it, discounted, and you get the most a tracker could cost over a fixed rack and still break even. The starting values are real market numbers for a home<sup class="cite"><a href="#src-2">2</a>,<a href="#src-3">3</a>,<a href="#src-4">4</a></sup> and for a solar farm;<sup class="cite"><a href="#src-1">1</a>,<a href="#src-2">2</a></sup> the maintenance, discount rate and lifetime are my assumptions.<sup class="cite"><a href="#src-a">A</a></sup> Change any of them.</p>
+        <p>The extra energy is worth money every year. Add up 25 years of it, discounted, and you get the most a tracker could cost over a fixed rack and still break even. The starting values are real market numbers for a home<sup class="cite"><a href="#src-2">2</a>,<a href="#src-3">3</a>,<a href="#src-4">4</a></sup> and for a solar farm, starting from the like-for-like 2026 tracker price;<sup class="cite"><a href="#src-1">1</a>,<a href="#src-2">2</a>,<a href="#src-40">40</a></sup> the maintenance, discount rate and lifetime are my assumptions.<sup class="cite"><a href="#src-a">A</a></sup> Change any of them.</p>
       </div>
       <div class="ctrl-grid">
         <div class="card-box box-pad">
@@ -478,6 +478,7 @@
         <li id="src-2"><span class="n">2</span><span>NREL, PV system cost benchmark, Q1 2024 (report 92257): residential modeled market price $3.15/W DC; tracking premium of $0.20/W DC from Berkeley Lab 2023 data. <a href="https://nrel.gov/docs/fy25osti/92257.pdf" target="_blank" rel="noopener">nrel.gov/docs/fy25osti/92257.pdf</a></span></li>
         <li id="src-3"><span class="n">3</span><span>EnergySage, "Is a solar tracking system worth it?": trackers add "40 to 100 percent" to system cost. <a href="https://www.energysage.com/business-solutions/solar-trackers-everything-need-know/" target="_blank" rel="noopener">energysage.com</a></span></li>
         <li id="src-4"><span class="n">4</span><span>EnergySage, "Cost of electricity in Arizona": average residential rate of 15 cents/kWh, November 2026. <a href="https://www.energysage.com/local-data/electricity-cost/az/" target="_blank" rel="noopener">energysage.com</a></span></li>
+        <li id="src-40"><span class="n">40</span><span>SEIA and Wood Mackenzie, <i>US Solar Market Insight Q3 2026</i>, executive summary: Q2 2026 modeled utility-scale prices, fixed-tilt $0.95/W DC and single-axis tracking $1.06/W DC. <a href="https://tecsol-quotidien.fr/wp-content/uploads/2026/09/USSMI_Q3_2026_ES.pdf" target="_blank" rel="noopener">tecsol-quotidien.fr</a></span></li>
         <li id="src-6"><span class="n">6</span><span>The Fredericks Company, "AN 1004: Inclinometers for Solar Tracking Systems." <a href="https://www.frederickscompany.com/application-notes/inclinometers-for-solar-tracking-systems/" target="_blank" rel="noopener">frederickscompany.com</a></span></li>
         <li id="src-7"><span class="n">7</span><span>K. Anderson and M. Mikofski, "Slope-Aware Backtracking for Single-Axis Trackers," NREL/TP-5K00-76626, 2020. <a href="https://doi.org/10.2172/1660126" target="_blank" rel="noopener">doi.org/10.2172/1660126</a></span></li>
         <li id="src-8"><span class="n">8</span><span>K. S. Anderson et al., "pvlib python: 2023 project update," <i>JOSS</i> 8(92), 5994, 2023. <a href="https://doi.org/10.21105/joss.05994" target="_blank" rel="noopener">doi.org/10.21105/joss.05994</a></span></li>
@@ -1566,8 +1567,8 @@
   var MARKETS = {
     home: { name: "home", price: 0.15, priceMax: 0.30, priceStep: 0.005, prem: 1.26, premMax: 3.5, premStep: 0.02, premLow: 1.26, premHigh: 3.15, om: 20, omMax: 40,
             band: "What trackers cost on homes: 40 to 100% of a $3.15/W system" },
-    farm: { name: "farm", price: 0.03, priceMax: 0.08, priceStep: 0.001, prem: 0.01, premMax: 0.40, premStep: 0.005, premLow: 0.01, premHigh: 0.20, om: 2, omMax: 10,
-            band: "What trackers cost on farms: $0.01/W (2025) to $0.20/W (2023)" }
+    farm: { name: "farm", price: 0.03, priceMax: 0.08, priceStep: 0.001, prem: 0.11, premMax: 0.40, premStep: 0.005, premLow: 0.01, premHigh: 0.20, om: 2, omMax: 10,
+            band: "Published farm tracker costs: $0.01/W to $0.20/W (start: $0.11/W like-for-like, 2026)" }
   };
   var econ = { mkt: "home", setup: "Single axis", price: 0.15, prem: 1.26, om: 20, rate: 6, life: 25 };
   var ePrice = document.getElementById("ePrice"), ePrem = document.getElementById("ePrem"), eOm = document.getElementById("eOm"),
