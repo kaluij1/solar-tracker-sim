@@ -174,7 +174,7 @@ For a developer deciding how to build one farm, the like-for-like $0.11/W is the
 comparison. [`cost_check.py`](cost_check.py) compares it with the break-even premium across
 contract prices of $25, $30 and $35/MWh[^lbl2026] and discount rates of 4, 6 and 8%:[^r-cost]
 
-| Single axis tracker | Break-even at $30/MWh, 6% | Range over the 9 cases | Pays at $0.11/W |
+| Single axis tracker | Break-even at $30/MWh, 6% | Range over the 9 cases |
 |---|---|---|---|
 | Phoenix, standing alone | $0.14/W | $0.09–0.20/W | 8 of 9 cases |
 | Phoenix, rows with backtracking (GCR 0.35) | $0.10/W | $0.07–0.15/W | 3 of 9 cases |
@@ -216,7 +216,7 @@ gives up some direct light.[^backtrack] `run_rows.py` reruns the single axis cas
 
 With panels covering 35% of the ground (ground coverage ratio 0.35, an assumption[^a-rows]):[^r-rows]
 
-| Site | Single axis tracker in rows | AC energy (kWh/yr) | vs standing alone | Gain over fixed tilt | Farm break-even premium |
+| Site | Single axis tracker in rows | AC energy (kWh/yr) | vs standing alone | Gain over fixed tilt |
 |---|---|---|---|---|---|
 | Phoenix | Pointing at the sun, loss in proportion to shade | 10,305 | -3.8% | +20.3% | $0.11/W |
 | Phoenix | Pointing at the sun, bypass blocks switch off | 9,720 | -9.2% | +13.5% | $0.06/W |
@@ -277,24 +277,22 @@ Desert site in the same price zone.[^nsrdb] Fixed panels use the best tilt for D
 2 pm (Pacific standard time), and about $50 at 6 to 7 pm. Prices were below zero in 11% of
 hours, and 31% of a fixed south-facing panel's energy came in those hours.[^r-value]
 
-| Setup (vs fixed, facing south) | Extra energy | Extra market revenue | Capture price ($/MWh) | Break-even: flat $30/MWh | Break-even: 2025 market | Break-even: timing-adjusted contract |
-|---|---|---|---|---|---|---|
-| Fixed, best tilt, facing south | | | $12.45 | | | |
-| Single axis, standing alone | +26% | +58% | $15.59 (+25%) | $0.151/W | $0.138/W | $0.367/W |
-| Single axis in rows, backtracking | +19% | +34% | $14.04 (+13%) | $0.105/W | $0.072/W | $0.209/W |
-| Dual axis, standing alone | +41% | +79% | $15.82 (+27%) | $0.255/W | $0.199/W | $0.515/W |
-| Fixed, best tilt, facing west | −21% | −10% | $14.32 (+15%) | −$0.169/W | −$0.051/W | −$0.089/W |
+| Setup (vs fixed, facing south) | Extra energy | Extra market revenue | Capture price ($/MWh) | Break-even: flat $30/MWh | Break-even: 2025 market |
+|---|---|---|---|---|---|
+| Fixed, best tilt, facing south | | | $12.45 | | |
+| Single axis, standing alone | +26% | +58% | $15.59 (+25%) | $0.151/W | $0.138/W |
+| Single axis in rows, backtracking | +19% | +34% | $14.04 (+13%) | $0.105/W | $0.072/W |
+| Dual axis, standing alone | +41% | +79% | $15.82 (+27%) | $0.255/W | $0.199/W |
+| Fixed, best tilt, facing west | −21% | −10% | $14.32 (+15%) | −$0.169/W | −$0.051/W |
 
-The capture price is market revenue divided by energy. The timing-adjusted contract is an
-illustration, not a real contract term:[^a-timing] fixed output keeps $30/MWh and every other
-setup is paid in proportion to its capture price. Hourly profiles are in
+The capture price is market revenue divided by energy. Hourly profiles are in
 [`results/value_by_hour.csv`](results/value_by_hour.csv).[^r-value]
 
 What this shows:
 
 * **Timing is real.** In farm rows, trackers add 19% more energy but 34% more market revenue, because their extra output arrives in the morning and late afternoon, outside the cheapest midday hours. This matches Berkeley Lab's description of tracking shifting output to higher-priced hours.[^lbl-value]
 * **Facing west is not a substitute.** It raises the value per MWh by 15%, but loses 21% of the energy, so revenue falls.
-* **Whether trackers pay depends on how the farm is paid.** Against the $0.11/W like-for-like price,[^seia-q3] tracker rows are roughly even on a flat contract ($0.105/W), fall short selling at 2025 market prices ($0.072/W, because midday solar of every kind earned little: fixed panels captured only $12.45/MWh), and clear it easily on the timing-adjusted contract ($0.209/W).
+* **Whether trackers pay depends on how the farm is paid.** Against the $0.11/W like-for-like price,[^seia-q3] tracker rows are roughly even on a flat contract ($0.105/W), and fall short selling at 2025 market prices ($0.072/W, because midday solar of every kind earned little: fixed panels captured only $12.45/MWh).
 * **Limits:** one year of prices at one hub, day-ahead only; typical-year weather matched to 2025 prices by date and hour, not by actual cloudy days;[^a-timing] no curtailment orders, storage or tax credits.
 
 ## Running it
@@ -368,4 +366,4 @@ python make_figures.py        # writes figures/*.png
 [^caiso]: California ISO, OASIS: 2025 day-ahead hourly LMPs at TH_SP15_GEN-APND. <http://oasis.caiso.com>. Copy in [`data/caiso_sp15_dam_2025.csv`](data/caiso_sp15_dam_2025.csv). (SOURCES.md #41)
 [^gridstatus]: gridstatus, open source Python library, version 0.37. <https://opensource.gridstatus.io> (SOURCES.md #42)
 [^r-value]: [`results/value.csv`](results/value.csv) and [`results/value_by_hour.csv`](results/value_by_hour.csv), produced by `run_value.py`.
-[^a-timing]: Assumptions in part 6: the timing-adjusted contract (fixed output at $30/MWh, other setups paid in proportion to their capture price) is an illustration of how buyers value timing, not a real contract term; and 2025 prices are matched to typical-year weather by month, day and hour.
+[^a-timing]: Assumption in part 6: 2025 prices are matched to typical-year weather by month, day and hour.

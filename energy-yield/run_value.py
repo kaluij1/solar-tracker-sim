@@ -19,11 +19,9 @@ Setups, per kW of panels:
 
 For each: energy, market revenue, revenue if the plant stops when the price is below
 zero, capture price (revenue / energy) and value factor (capture price / average price
-of all hours), and the break-even tracker premium three ways:
+of all hours), and the break-even tracker premium two ways:
   1. flat $30/MWh contract price (energy only, as in economics.py)
   2. 2025 market revenue (what a plant selling at hourly prices would earn)
-  3. timing-adjusted contract (illustration): fixed-tilt output keeps $30/MWh and every
-     other setup is paid in proportion to its capture price
 
 Run run_energy.py first. Writes results/value.csv and results/value_by_hour.csv.
 Price data: data/caiso_sp15_dam_2025.csv, from fetch_caiso_prices.py.
@@ -101,13 +99,8 @@ def run():
     df["breakeven_flat_ppa_per_w"] = pvf * ((df.kwh_per_kw - base.kwh_per_kw) * FLAT_PPA / 1000 - OM) / 1000
     df["breakeven_market_per_w"] = pvf * ((df.market_revenue_per_kw - base.market_revenue_per_kw) - OM) / 1000
     df["breakeven_market_stop_below_zero_per_w"] = pvf * ((df.revenue_stop_below_zero_per_kw - base.revenue_stop_below_zero_per_kw) - OM) / 1000
-    # Lens 3 (illustration): keep the $30/MWh contract price for fixed-tilt output, and pay
-    # each other setup in proportion to what its output is worth per MWh on the market.
-    df["timing_adjusted_ppa_per_mwh"] = FLAT_PPA * df.capture_price_per_mwh / base.capture_price_per_mwh
-    df["breakeven_timing_adjusted_per_w"] = pvf * ((df.kwh_per_kw * df.timing_adjusted_ppa_per_mwh
-                                                   - base.kwh_per_kw * FLAT_PPA) / 1000 - OM) / 1000
     df.loc["Fixed, best tilt, facing south", ["breakeven_flat_ppa_per_w", "breakeven_market_per_w",
-           "breakeven_market_stop_below_zero_per_w", "breakeven_timing_adjusted_per_w"]] = np.nan
+           "breakeven_market_stop_below_zero_per_w"]] = np.nan
     df["best_tilt_deg"] = best
     df.to_csv(OUT / "value.csv")
 
