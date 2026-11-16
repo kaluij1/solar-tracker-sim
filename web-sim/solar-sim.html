@@ -380,6 +380,13 @@
         </div>
         <div class="card-box panel-side">
           <div>
+            <span class="ctl-label" id="lbl-sun">Sun</span>
+            <div class="seg" role="group" aria-labelledby="lbl-sun" id="sunSeg">
+              <button type="button" data-sun="sweep" aria-pressed="true">Time-lapse sweep</button>
+              <button type="button" data-sun="real" aria-pressed="false">Real day</button>
+            </div>
+          </div>
+          <div>
             <span class="ctl-label" id="lbl-mode">Controller</span>
             <div class="seg" role="group" aria-labelledby="lbl-mode" id="modeSeg">
               <button type="button" data-mode="raw" aria-pressed="true">Original</button>
@@ -390,6 +397,7 @@
           <div>
             <div class="row"><label class="ctl-label" for="cloud" style="margin:0">Cloud cover</label><output id="cloudOut">30%</output></div>
             <input type="range" id="cloud" min="0" max="80" step="1" value="30">
+            <p class="note" id="cloudNote" style="margin:4px 0 0;display:none">On a real day, clouds come from that day's weather.</p>
           </div>
           <div>
             <div class="row"><label class="ctl-label" for="flicker" style="margin:0">Reflection flicker</label><output id="flickerOut">10%</output></div>
@@ -405,6 +413,46 @@
             <div class="stat"><span>Avg. error</span><b id="errOut">–</b></div>
           </div>
           <p class="note" id="ctrlNote">The sun crosses 80° of sky in 120 seconds, a time lapse, then the sweep restarts.</p>
+        </div>
+      </div>
+      <div class="card-box box-pad" style="margin-top:18px">
+        <p class="box-title">What twitching costs on a real day</p>
+        <p class="box-sub" id="costSub">Runs when you scroll here.</p>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Controller</th><th>Avg. pointing error</th><th>Reversals per hour</th><th>Servo moves per hour</th><th>Energy vs perfect tracking</th></tr></thead>
+            <tbody id="costTable"></tbody>
+          </table>
+        </div>
+        <p class="note" id="costNote">The real sun moves only 15° an hour, so this runs the controller in real time: every 15 minutes of daylight, 30 seconds of control at 1 ms steps, with that hour's clouds. The pointing error found is applied to the whole 15 minutes, and power comes from the same solar model as the top of the page. Cloud strength from the share of diffuse light and sensor brightness from total sunlight are my assumptions; flicker is the value set above.<sup class="cite"><a href="#src-a">A</a></sup></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-sim" aria-labelledby="real-title">
+    <div class="inner">
+      <p class="step">Against a real array</p>
+      <h2 id="real-title">The model, run against seven years of a real system's output</h2>
+      <div class="prose">
+        <p>Checking one model against another only shows they agree. So I ran the same equations against PVDAQ system 4, a 1 kW array at NREL in Golden, Colorado, measured every minute from 2010 to 2016.<sup class="cite"><a href="#src-38">38</a>,<a href="#src-39">39</a></sup> Nothing was tuned to fit: same losses, same temperature model, no degradation.</p>
+      </div>
+      <div class="lower" style="margin-top:22px">
+        <div class="card-box box-pad">
+          <p class="box-title">Predicted energy ÷ measured energy, by year</p>
+          <p class="box-sub">1.00 is a perfect prediction. Hover for values.</p>
+          <ul class="legend">
+            <li><i style="background:#46607F"></i>Given the measured sunlight on the panel</li>
+            <li><i style="background:#eb6834"></i>Given only satellite weather (as for Phoenix and Des Moines)</li>
+          </ul>
+          <div class="chart" id="realWrap"><canvas id="realChart" aria-label="Predicted over measured energy for each year from 2010 to 2016"></canvas><div class="tip" id="realTip"></div></div>
+        </div>
+        <div class="card-box box-pad">
+          <p class="box-title">What it shows</p>
+          <div class="stats two" style="margin:10px 0 12px">
+            <div class="stat"><span>7 years, satellite weather</span><b id="realC"></b></div>
+            <div class="stat"><span>7 years, measured sunlight</span><b id="realA"></b></div>
+          </div>
+          <p class="note" style="margin-top:0">Over years, energy comes out within about 2%. Single hours are much less certain: from satellite data the hourly error is about a third of the average, because the satellite sees a 4 km patch of sky, not this array.<sup class="cite"><a href="#src-21">21</a></sup> The drift upward after 2012 is consistent with the array slowly losing output, which the model leaves out. One fixed system in one climate, not a tracker.<sup class="cite"><a href="#src-r">R</a></sup></p>
         </div>
       </div>
     </div>
@@ -447,8 +495,10 @@
         <li id="src-35"><span class="n">35</span><span>NOAA Global Monitoring Laboratory, "Solar Calculation Details," based on J. Meeus, <i>Astronomical Algorithms</i>. <a href="https://gml.noaa.gov/grad/solcalc/calcdetails.html" target="_blank" rel="noopener">gml.noaa.gov/grad/solcalc</a></span></li>
         <li id="src-36"><span class="n">36</span><span>K. S. Anderson and A. R. Jensen, "Shaded fraction and backtracking in single-axis trackers on rolling terrain," <i>J. Renewable Sustainable Energy</i> 16(2), 023504, 2024. <a href="https://doi.org/10.1063/5.0202220" target="_blank" rel="noopener">doi.org/10.1063/5.0202220</a></span></li>
         <li id="src-37"><span class="n">37</span><span>F. Martínez-Moreno, J. Muñoz and E. Lorenzo, "Experimental model to estimate shading losses on PV arrays," <i>Solar Energy Materials and Solar Cells</i> 94(12), 2010. <a href="https://doi.org/10.1016/j.solmat.2010.07.029" target="_blank" rel="noopener">doi.org/10.1016/j.solmat.2010.07.029</a></span></li>
-        <li id="src-r"><span class="n">R</span><span>My validation run: <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/web-sim/validation.json" target="_blank" rel="noopener">web-sim/validation.json</a>, produced by <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/web-sim/validate.js" target="_blank" rel="noopener">validate.js</a>, which runs this page's model against the pvlib results and NREL's Solar Position Algorithm.<sup class="cite"><a href="#src-9">9</a></sup></span></li>
-        <li id="src-a"><span class="n">A</span><span>Assumptions: the divider wall geometry, cloud and flicker statistics, and light sensor lag in the controller replay; the row spacing and the three bypass blocks per module in the farm section; and the extra maintenance ($20/kW per year for a home, $2/kW for a farm), 6% discount rate, 25 year life and 0.5% yearly panel degradation in the payback section. These are my modeling choices, listed with reasoning in the <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/README.md" target="_blank" rel="noopener">main README</a>.</span></li>
+        <li id="src-38"><span class="n">38</span><span>C. Deline, K. Perry, M. Deceglie, M. Muller, W. Sekulic and D. Jordan, "Photovoltaic Data Acquisition (PVDAQ) Public Datasets," Open Energy Data Initiative, NREL, 2021. <a href="https://doi.org/10.25984/1846021" target="_blank" rel="noopener">doi.org/10.25984/1846021</a></span></li>
+        <li id="src-39"><span class="n">39</span><span>M. G. Deceglie et al., RdTools: data file and system description for PVDAQ system 4 (1 kW, 40° tilt, south facing). <a href="https://github.com/NatLabRockies/rdtools/releases/download/3.0.0/pvdaq_system_4_2010-2016_subset_soil_signal.csv" target="_blank" rel="noopener">github.com/NatLabRockies/rdtools</a></span></li>
+        <li id="src-r"><span class="n">R</span><span>Comparison with the measured array: <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/energy-yield/results/measured_validation.csv" target="_blank" rel="noopener">measured_validation.csv</a>, from <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/energy-yield/validate_measured.py" target="_blank" rel="noopener">validate_measured.py</a>. My validation run against pvlib: <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/web-sim/validation.json" target="_blank" rel="noopener">web-sim/validation.json</a>, produced by <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/web-sim/validate.js" target="_blank" rel="noopener">validate.js</a>, which runs this page's model against the pvlib results and NREL's Solar Position Algorithm.<sup class="cite"><a href="#src-9">9</a></sup></span></li>
+        <li id="src-a"><span class="n">A</span><span>Assumptions: the divider wall geometry, cloud and flicker statistics, and light sensor lag in the controller replay; the row spacing and the three bypass blocks per module in the farm section; the cloud strength (from the diffuse share of sunlight) and sensor brightness (from total sunlight) when the controller runs on a real day; and the extra maintenance ($20/kW per year for a home, $2/kW for a farm), 6% discount rate, 25 year life and 0.5% yearly panel degradation in the payback section. These are my modeling choices, listed with reasoning in the <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/README.md" target="_blank" rel="noopener">main README</a>.</span></li>
       </ul>
       <p class="note">Numbers match <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/SOURCES.md" target="_blank" rel="noopener" style="color:var(--accent)">SOURCES.md</a> and the case study.</p>
     </div>
@@ -465,6 +515,7 @@
 <script src="weather-data.js"></script>
 <script src="solar-model.js"></script>
 <script src="controller-model.js"></script>
+<script src="real-day.js"></script>
 <script>
 (function () {
   "use strict";
@@ -1341,6 +1392,7 @@
 
   /* ---------- render ---------- */
   function render() {
+    if (typeof scheduleCost === "function" && cost && cost.key && cost.key.indexOf(dayKey() + "|") !== 0) scheduleCost();
     var e = evalAt(state.site, state.day, state.time);
     drawScene(e);
     drawDay();
@@ -1630,13 +1682,67 @@
     Math.max(VALID.rows.rotation["Phoenix, AZ"].max_rotation_error_deg, VALID.rows.rotation["Des Moines, IA"].max_rotation_error_deg).toFixed(2) + "°, and yearly energy within " + VALID.rows.max_abs_diff_pct.toFixed(2) +
     "% across " + VALID.rows.annual.length + " combinations of site, row spacing and strategy.<sup class=\"cite\"><a href=\"#src-r\">R</a></sup>";
 
+  /* ---------- measured array ---------- */
+  var REAL = {"A":{"2010-2016":{"ratio":1.0091,"r2":0.938,"nrmse":17.0,"hours":23908},"2010":{"ratio":0.9915,"r2":0.972,"nrmse":11.9,"hours":1945},"2011":{"ratio":0.9975,"r2":0.956,"nrmse":14.2,"hours":3540},"2012":{"ratio":0.9925,"r2":0.98,"nrmse":10.5,"hours":3806},"2013":{"ratio":1.0152,"r2":0.898,"nrmse":21.8,"hours":3664},"2014":{"ratio":1.0269,"r2":0.897,"nrmse":22.7,"hours":3670},"2015":{"ratio":1.0216,"r2":0.914,"nrmse":20.8,"hours":3658},"2016":{"ratio":1.0131,"r2":0.97,"nrmse":11.7,"hours":3625}},"B":{"2010-2016":{"ratio":1.0009,"r2":0.825,"nrmse":29.4,"hours":24753},"2010":{"ratio":0.9845,"r2":0.837,"nrmse":27.5,"hours":1994},"2011":{"ratio":1.0033,"r2":0.826,"nrmse":28.4,"hours":3666},"2012":{"ratio":0.9942,"r2":0.826,"nrmse":29.9,"hours":3937},"2013":{"ratio":0.985,"r2":0.842,"nrmse":27.7,"hours":3789},"2014":{"ratio":1.0182,"r2":0.806,"nrmse":31.6,"hours":3816},"2015":{"ratio":1.0042,"r2":0.826,"nrmse":30.4,"hours":3802},"2016":{"ratio":1.0101,"r2":0.818,"nrmse":29.1,"hours":3748}},"C":{"2010-2016":{"ratio":0.9808,"r2":0.793,"nrmse":33.1,"hours":24753},"2010":{"ratio":0.9498,"r2":0.835,"nrmse":29.4,"hours":1994},"2011":{"ratio":0.9717,"r2":0.798,"nrmse":31.8,"hours":3666},"2012":{"ratio":0.9535,"r2":0.817,"nrmse":31.4,"hours":3937},"2013":{"ratio":0.9723,"r2":0.792,"nrmse":33.3,"hours":3789},"2014":{"ratio":1.0162,"r2":0.743,"nrmse":38.4,"hours":3816},"2015":{"ratio":0.9982,"r2":0.776,"nrmse":35.8,"hours":3802},"2016":{"ratio":0.9932,"r2":0.812,"nrmse":30.4,"hours":3748}}};
+  (function () {
+    var years = ["2010", "2011", "2012", "2013", "2014", "2015", "2016"], c = document.getElementById("realChart"), tip = document.getElementById("realTip"), hov = null;
+    var S = [{ k: "A", c: "#46607F", n: "Measured sunlight" }, { k: "C", c: "#eb6834", n: "Satellite weather" }];
+    document.getElementById("realC").textContent = REAL.C["2010-2016"].ratio.toFixed(3);
+    document.getElementById("realA").textContent = REAL.A["2010-2016"].ratio.toFixed(3);
+    function draw() {
+      var F = fitCanvas(c), ctx = F.ctx, W = F.w, H = F.h, L = 40, R = 10, T = 10, B = 24, pw = W - L - R, ph = H - T - B, lo = 0.9, hi = 1.1;
+      function X(i) { return L + (i + 0.5) / years.length * pw; }
+      function Y(r) { return T + (hi - r) / (hi - lo) * ph; }
+      ctx.clearRect(0, 0, W, H); ctx.font = "11px " + v("--font-body"); ctx.lineWidth = 1;
+      [0.9, 0.95, 1, 1.05, 1.1].forEach(function (r) {
+        ctx.strokeStyle = r === 1 ? v("--muted") : v("--rule"); ctx.beginPath(); ctx.moveTo(L, Y(r)); ctx.lineTo(W - R, Y(r)); ctx.stroke();
+        ctx.fillStyle = v("--muted"); ctx.textAlign = "right"; ctx.fillText(r.toFixed(2), L - 6, Y(r) + 4);
+      });
+      ctx.textAlign = "center"; years.forEach(function (y, i) { ctx.fillText(y, X(i), H - 6); });
+      if (hov != null) { ctx.fillStyle = "rgba(70,96,127,.08)"; ctx.fillRect(X(hov) - pw / 14, T, pw / 7, ph); }
+      S.forEach(function (s, j) {
+        ctx.strokeStyle = s.c; ctx.lineWidth = 2; ctx.beginPath();
+        years.forEach(function (y, i) { var p = [X(i) + (j ? 5 : -5), Y(REAL[s.k][y].ratio)]; if (i) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); });
+        ctx.stroke();
+        years.forEach(function (y, i) { ctx.fillStyle = s.c; ctx.beginPath(); ctx.arc(X(i) + (j ? 5 : -5), Y(REAL[s.k][y].ratio), 4, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = v("--card"); ctx.lineWidth = 1.5; ctx.stroke(); });
+      });
+      draw.X = X; draw.L = L; draw.pw = pw; draw.W = W;
+    }
+    c.addEventListener("pointermove", function (ev) {
+      var r = c.getBoundingClientRect(), i = Math.floor((ev.clientX - r.left - draw.L) / draw.pw * years.length);
+      if (i < 0 || i >= years.length) { hov = null; tip.style.display = "none"; draw(); return; }
+      hov = i; tip.textContent = ""; tip.appendChild(el("b", null, years[i]));
+      S.forEach(function (s) { var d = el("div"), q = el("i"); q.style.background = s.c; d.appendChild(q); d.appendChild(document.createTextNode(s.n + ": " + REAL[s.k][years[i]].ratio.toFixed(3))); tip.appendChild(d); });
+      tip.style.display = "block"; var tx = draw.X(i) + 14; if (tx + 190 > draw.W) tx = draw.X(i) - 200; tip.style.left = tx + "px"; tip.style.top = "6px";
+      draw();
+    });
+    c.addEventListener("pointerleave", function () { hov = null; tip.style.display = "none"; draw(); });
+    draw(); window.addEventListener("resize", function () { setTimeout(draw, 130); });
+  })();
+
   /* ---------- controller replay ---------- */
   var cScene = document.getElementById("ctrlScene"), strip = document.getElementById("strip");
-  var ctrl = { mode: "raw", cloud: 30, flicker: 10, running: !reduced, s: null, hist: [], last: 0 };
+  var ctrl = { mode: "raw", cloud: 30, flicker: 10, running: !reduced, s: null, hist: [], last: 0, sunMode: "sweep", slots: null, key: "" };
+  var RD = window.RealDay;
+  function dayKey() { return state.site + "|" + state.day; }
   function resetCtrl() {
-    ctrl.s = CM.create({ mode: ctrl.mode, cloud: ctrl.cloud, flicker: ctrl.flicker, lux: 400 });
+    var real = ctrl.sunMode === "real";
+    if (real && (ctrl.key !== dayKey() || !ctrl.slots)) { ctrl.slots = RD.slots(state.site, state.day, DATA); ctrl.key = dayKey(); }
+    ctrl.s = CM.create({ mode: ctrl.mode, cloud: ctrl.cloud, flicker: ctrl.flicker, lux: 400, externalSun: real });
+    if (real) driveReal();
     ctrl.hist = [];
   }
+  // real day, compressed into the same 120 s: set the sun angle, clouds and brightness for this moment
+  function driveReal() {
+    var sl = ctrl.slots, s = ctrl.s;
+    if (!sl || !sl.length) { s.sun = 0; s.lux = 5; return; }
+    var x = Math.min(1, s.t / CM.C.SWEEP_S) * (sl.length - 1), i = Math.min(sl.length - 2, Math.floor(x)), f = x - i;
+    if (sl.length < 2) { i = 0; f = 0; }
+    var a = sl[i], b = sl[Math.min(sl.length - 1, i + 1)];
+    s.sun = a.rot + (b.rot - a.rot) * f; s.cloud = a.cloud + (b.cloud - a.cloud) * f; s.lux = a.lux + (b.lux - a.lux) * f;
+    ctrl.realHour = a.hour + (b.hour - a.hour) * f;
+  }
+  function sweepRange() { return ctrl.sunMode === "real" ? 88 : 45; }
   function drawCtrl() {
     var s = ctrl.s, F = fitCanvas(cScene), ctx = F.ctx, W = F.w, H = F.h;
     var g = ctx.createLinearGradient(0, 0, 0, H);
@@ -1647,7 +1753,8 @@
     ctx.fillStyle = v("--ground"); ctx.fillRect(0, gy, W, H - gy);
     // arc of the sweep
     ctx.setLineDash([3, 4]); ctx.strokeStyle = "rgba(70,96,127,.4)"; ctx.beginPath();
-    for (var a = -40; a <= 40; a += 2) { var r = a * Math.PI / 180, px = gx + Rs * Math.sin(r), py = gy - 30 - Rs * Math.cos(r); if (a === -40) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+    var A0 = ctrl.sunMode === "real" ? -86 : -40;
+    for (var a = A0; a <= -A0; a += 2) { var r = a * Math.PI / 180, px = gx + Rs * Math.sin(r), py = gy - 30 - Rs * Math.cos(r); if (a === A0) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
     ctx.stroke(); ctx.setLineDash([]);
     var sr = s.sun * Math.PI / 180, sx = gx + Rs * Math.sin(sr), sy = gy - 30 - Rs * Math.cos(sr);
     var glow = ctx.createRadialGradient(sx, sy, 2, sx, sy, 30); glow.addColorStop(0, "rgba(255,206,84,.85)"); glow.addColorStop(1, "rgba(255,206,84,0)");
@@ -1675,16 +1782,20 @@
     ctx.fillText("West", 12, gy + 18); ctx.textAlign = "right"; ctx.fillText("East", W - 12, gy + 18);
     ctx.textAlign = "left"; ctx.fillStyle = v("--fg"); ctx.font = "600 12px " + v("--font-body");
     ctx.fillText("Sensors: east " + s.east + ", west " + s.west + " (ADC counts)", 12, 22);
+    if (ctrl.sunMode === "real" && ctrl.realHour != null) {
+      ctx.fillStyle = v("--muted"); ctx.font = "12px " + v("--font-body");
+      ctx.fillText(state.site.split(",")[0] + ", " + dateLabel(state.day) + ", " + timeLabel(ctrl.realHour) + " · clouds " + Math.round(s.cloud) + "%", 12, 40);
+    }
   }
   function drawStrip() {
     var F = fitCanvas(strip), ctx = F.ctx, W = F.w, H = F.h, h = ctrl.hist;
     ctx.clearRect(0, 0, W, H);
     if (!h.length) return;
-    var t1 = h[h.length - 1].t, t0 = t1 - 20, lo = -45, hi = 45;
+    var t1 = h[h.length - 1].t, t0 = t1 - 20, hi = sweepRange(), lo = -hi;
     function X(t) { return 34 + (t - t0) / 20 * (W - 40); }
     function Y(a) { return 6 + (hi - a) / (hi - lo) * (H - 22); }
     ctx.strokeStyle = v("--rule"); ctx.fillStyle = v("--muted"); ctx.font = "10px " + v("--font-body"); ctx.textAlign = "right";
-    [-40, 0, 40].forEach(function (a) { ctx.beginPath(); ctx.moveTo(34, Y(a)); ctx.lineTo(W - 6, Y(a)); ctx.stroke(); ctx.fillText(a + "°", 30, Y(a) + 3); });
+    (hi > 50 ? [-80, 0, 80] : [-40, 0, 40]).forEach(function (a) { ctx.beginPath(); ctx.moveTo(34, Y(a)); ctx.lineTo(W - 6, Y(a)); ctx.stroke(); ctx.fillText(a + "°", 30, Y(a) + 3); });
     ctx.setLineDash([4, 3]); ctx.strokeStyle = "#B08900"; ctx.lineWidth = 1.5; ctx.beginPath();
     h.forEach(function (p, i) { if (i === 0) ctx.moveTo(X(p.t), Y(p.sun)); else ctx.lineTo(X(p.t), Y(p.sun)); }); ctx.stroke(); ctx.setLineDash([]);
     ctx.strokeStyle = v("--accent"); ctx.lineWidth = 2; ctx.beginPath();
@@ -1701,7 +1812,9 @@
     if (!ctrl.running) return;
     var dt = ctrl.last ? Math.min(0.05, (ts - ctrl.last) / 1000) : 0.016; ctrl.last = ts;
     var ticks = Math.round(dt * 1000);
+    if (ctrl.sunMode === "real" && ctrl.key !== dayKey()) resetCtrl();
     for (var i = 0; i < ticks; i++) {
+      if (ctrl.sunMode === "real" && i % 10 === 0) driveReal();
       CM.tick(ctrl.s);
       if (i % 20 === 0) { ctrl.hist.push({ t: ctrl.s.t, sun: ctrl.s.sun, panel: ctrl.s.panel }); }
     }
@@ -1724,9 +1837,63 @@
   [["cloud", "cloudOut"], ["flicker", "flickerOut"]].forEach(function (p) {
     var inp = document.getElementById(p[0]);
     inp.addEventListener("input", function () {
-      ctrl[p[0]] = +inp.value; ctrl.s[p[0]] = +inp.value; document.getElementById(p[1]).textContent = inp.value + "%";
+      ctrl[p[0]] = +inp.value; if (!(p[0] === "cloud" && ctrl.sunMode === "real")) ctrl.s[p[0]] = +inp.value;
+      document.getElementById(p[1]).textContent = inp.value + "%";
+      if (p[0] === "flicker") scheduleCost();
     });
   });
+  document.querySelectorAll("#sunSeg button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      ctrl.sunMode = b.getAttribute("data-sun");
+      document.querySelectorAll("#sunSeg button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      var real = ctrl.sunMode === "real";
+      document.getElementById("cloud").disabled = real;
+      document.getElementById("cloudNote").style.display = real ? "block" : "none";
+      document.getElementById("cloudOut").textContent = real ? "from weather" : ctrl.cloud + "%";
+      document.getElementById("ctrlReset").textContent = real ? "Restart the day" : "Restart the sweep";
+      document.getElementById("ctrlNote").textContent = real
+        ? "The day chosen at the top of the page, sunrise to sunset, played in 120 seconds. The sun angle is the tracker's real rotation; clouds follow that day's weather. Change the site or day above to replay another."
+        : "The sun crosses 80° of sky in 120 seconds, a time lapse, then the sweep restarts.";
+      resetCtrl(); drawCtrl(); drawStrip(); updateStats();
+    });
+  });
+
+  /* ---------- what twitching costs on a real day ---------- */
+  var cost = { key: "", timer: 0, visible: false, running: false, again: false };
+  var MODE_NAME = { raw: "Original", filtered: "Averaged + deadband", calculated: "Calculated sun" };
+  function scheduleCost() { clearTimeout(cost.timer); cost.timer = setTimeout(runCost, 500); }
+  function runCost() {
+    if (!cost.visible || !RD) return;
+    var key = dayKey() + "|" + ctrl.flicker;
+    if (key === cost.key) return;
+    if (cost.running) { cost.again = true; return; }
+    cost.running = true; cost.key = key;
+    var sub = document.getElementById("costSub");
+    sub.textContent = "Running " + state.site.split(",")[0] + ", " + dateLabel(state.day) + "…";
+    RD.runDay(state.site, state.day, DATA, ctrl.flicker, ["raw", "filtered", "calculated"], function (f) {
+      sub.textContent = "Running " + state.site.split(",")[0] + ", " + dateLabel(state.day) + "… " + Math.round(f * 100) + "%";
+    }, true).then(function (o) {
+      cost.running = false;
+      var tb = document.getElementById("costTable"); tb.textContent = "";
+      ["raw", "filtered", "calculated"].forEach(function (m) {
+        var c = o.controllers[m], tr = el("tr");
+        tr.appendChild(el("td", null, MODE_NAME[m]));
+        tr.appendChild(el("td", null, c.meanErrDeg.toFixed(2) + "°"));
+        tr.appendChild(el("td", { "class": c.reversalsPerHour > 1000 ? "" : "good" }, Math.round(c.reversalsPerHour).toLocaleString("en-US")));
+        tr.appendChild(el("td", null, Math.round(c.movesPerHour).toLocaleString("en-US")));
+        tr.appendChild(el("td", null, (c.lossPct < 0.005 ? "under 0.01%" : "−" + c.lossPct.toFixed(2) + "%") + " (" + c.kwh.toFixed(2) + " kWh)"));
+        tb.appendChild(tr);
+      });
+      var raw = o.controllers.raw, fil = o.controllers.filtered;
+      sub.textContent = state.site.split(",")[0] + ", " + dateLabel(state.day) + ": " + o.daylightHours.toFixed(1) + " daylight hours, " + o.perfectKwh.toFixed(1) +
+        " kWh with perfect single axis tracking. The original controller reverses about " + Math.round(raw.reversalsPerHour).toLocaleString("en-US") +
+        " times an hour but loses only " + raw.lossPct.toFixed(2) + "% of the energy. The cost of twitching is servo movement, not lost power.";
+      if (cost.again) { cost.again = false; runCost(); }
+    });
+  }
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(function (en) { cost.visible = en.some(function (x) { return x.isIntersecting; }) || cost.visible; if (cost.visible) runCost(); }, { rootMargin: "200px" }).observe(document.getElementById("costTable"));
+  } else { cost.visible = true; }
 
   /* ---------- start ---------- */
   syncDay(); syncTime();

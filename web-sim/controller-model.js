@@ -18,11 +18,16 @@
     SUN_START: -40, SUN_END: 40, SWEEP_S: 120               // the test's time lapse sweep
   };
 
-  function gauss() {
-    var u1 = Math.random() || 1e-9, u2 = Math.random();
+  // seeded random numbers (mulberry32), so a run can be repeated exactly
+  function rng(seed) {
+    var a = seed >>> 0;
+    return function () { a = (a + 0x6D2B79F5) >>> 0; var t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  function gauss(s) {
+    var u1 = s.rand() || 1e-9, u2 = s.rand();
     return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
   }
-  function ou(x, tau, sigma, dt) { return x - x / tau * dt + sigma * Math.sqrt(2 * dt / tau) * gauss(); }
+  function ou(s, x, tau, sigma, dt) { return x - x / tau * dt + sigma * Math.sqrt(2 * dt / tau) * gauss(s); }
   function luxToVolts(lux) {
     lux = Math.max(lux, 0.01);
     var r = C.RL10 * Math.pow(lux / 10, -C.GAMMA);
@@ -38,7 +43,9 @@
       commanded: 90, panel: 0,               // servo angle (0..180) and panel angle (-90..90)
       cloudState: 0, fE: 0, fW: 0, luxE: opts.lux || 400, luxW: opts.lux || 400,
       hist: [], moves: 0, reversals: 0, lastDir: 0, errSum: 0, errN: 0,
-      east: 0, west: 0, signal: 0
+      east: 0, west: 0, signal: 0,
+      externalSun: !!opts.externalSun,       // true: the caller sets s.sun (and may change s.lux, s.cloud)
+      rand: opts.seed != null ? rng(opts.seed) : Math.random
     };
     return s;
   }
@@ -47,18 +54,20 @@
   function tick(s) {
     var dt = 0.001;
     s.t += dt;
-    var frac = Math.min(s.t / C.SWEEP_S, 1);
-    s.sun = C.SUN_START + (C.SUN_END - C.SUN_START) * frac;
+    if (!s.externalSun) {
+      var frac = Math.min(s.t / C.SWEEP_S, 1);
+      s.sun = C.SUN_START + (C.SUN_END - C.SUN_START) * frac;
+    }
 
     // servo: slew toward the commanded angle
     var target = s.commanded - 90, maxStep = C.SERVO_DPS * dt, d = target - s.panel;
     s.panel += Math.max(-maxStep, Math.min(maxStep, d));
 
     // environment
-    s.cloudState = ou(s.cloudState, C.CLOUD_TAU, 0.5, dt);
+    s.cloudState = ou(s, s.cloudState, C.CLOUD_TAU, 0.5, dt);
     var cloudiness = Math.min(1, Math.abs(s.cloudState));
-    s.fE = ou(s.fE, C.FLICKER_TAU, s.flicker / 100, dt);
-    s.fW = ou(s.fW, C.FLICKER_TAU, s.flicker / 100, dt);
+    s.fE = ou(s, s.fE, C.FLICKER_TAU, s.flicker / 100, dt);
+    s.fW = ou(s, s.fW, C.FLICKER_TAU, s.flicker / 100, dt);
     var sunLux = s.lux * (1 - s.cloud / 100 * cloudiness);
     s.sky = 1 - s.cloud / 100 * cloudiness;
 

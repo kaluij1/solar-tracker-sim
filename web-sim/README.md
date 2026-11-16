@@ -7,6 +7,16 @@ Open `solar-sim.html` in any browser. No install, no server.
   the weather is the site's hourly NSRDB typical-year data,[^nsrdb] and four setups (flat,
   fixed at the best tilt, single axis, dual axis) turn and produce power. A full year is
   also computed in the browser, about 0.3 s, and shown next to the pvlib results.
+- **Controller on a real day:** the controller replay can follow a real day instead of the
+  time-lapse sweep: the sun angle is the tracker's actual rotation and the clouds come from
+  that day's weather. A second run measures the cost in real time: every 15 minutes of
+  daylight, 30 seconds of control at 1 ms steps, with power from `solar-model.js`. On
+  21 June in Phoenix (10% flicker), the original controller reverses about 14,000 times an
+  hour but loses only 0.05% of the day's energy; the filtered one reverses 8 times an hour.
+  Cloud strength (from the share of diffuse light) and sensor brightness (from total
+  sunlight) are assumptions. Random noise is seeded, so a run repeats exactly.
+- **Against a real array:** yearly predicted ÷ measured energy for PVDAQ system 4, from
+  `energy-yield/validate_measured.py`.
 - **Solar farm:** a side view of tracker rows shading each other, with a switch between
   pointing at the sun and backtracking, an adjustable row spacing, and a full year computed
   for each.
@@ -23,6 +33,7 @@ Open `solar-sim.html` in any browser. No install, no server.
 |---|---|
 | `solar-sim.html`, `style.css` | The page (the same page as on my website) |
 | `scene3d.js` | The 3D view (three.js, loaded from a CDN). Drawing only: every angle and number comes from `solar-model.js`. Without WebGL the page falls back to a flat drawing |
+| `real-day.js` | Runs the tracker controller on a real day of the weather data and measures pointing error, servo movement and energy lost |
 | `solar-model.js` | The physics, ported from `energy-yield/energy_model.py` |
 | `controller-model.js` | The tracker and its controllers, ported from the Wokwi chip and sketch |
 | `weather-data.js` | Hourly weather for both sites, plus module, inverter and loss parameters, exported from the pvlib model |

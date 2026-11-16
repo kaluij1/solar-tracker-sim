@@ -1,3 +1,4 @@
 **/tests/closed_loop_test
 *.o
 __pycache__/
+energy-yield/data/pvdaq_system_4.csv

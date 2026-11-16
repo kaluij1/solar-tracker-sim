@@ -214,12 +214,42 @@ The tracker angle and shaded fraction use pvlib's `tracking.singleaxis` and
 part of the sky and ground from each row, which is not modeled, and the fixed tilt baseline
 is unshaded. `results/rows.csv` has the same cases for ground coverage from 0.20 to 0.60.
 
+## 5. Checked against a real system
+
+Everything above compares one model with another. This part compares the model with a
+real array: PVDAQ system 4,[^pvdaq] a 1 kW silicon array at NREL in Golden, Colorado, tilted 40°
+and facing south, measured every minute from 2010 to 2016.[^rdtools] The model is run with
+**nothing tuned**: the same PVWatts losses (14.08%), SAPM cell temperature and PVWatts DC
+equation as the browser simulator, a flat 96% inverter, and no degradation.
+
+| Test | What the model is given | Model ÷ measured, 2010–2016 | Each year | Hourly R² |
+|---|---|---|---|---|
+| A | Measured sunlight on the panel, air temperature, wind | 1.009 | 0.991 to 1.027 | 0.94 |
+| B | Satellite irradiance (NSRDB), to predict the sunlight on the panel | 1.001 | 0.985 to 1.018 | 0.82 (30 min) |
+| C | Satellite irradiance only: the whole chain, as used for Phoenix and Des Moines | 0.981 | 0.950 to 1.016 | 0.79 (30 min) |
+
+What this shows:[^r-measured]
+
+* **Energy over years is right to within about 2%.** From satellite weather alone, the model
+  predicts 7 years of energy 1.9% low. Given the measured sunlight, it is 0.9% high.
+* **Single hours are much less certain.** Hour to hour, test C's error is about 33% of the
+  mean, because the satellite sees a 4 km pixel, not this array, and clouds move. This is
+  why the study reports yearly totals, not hourly ones.
+* **The model drifts high over time**, from 0.99 in 2010–2012 to about 1.02 in 2014–2015 in
+  test A. The model has no degradation, so this is consistent with the array slowly losing
+  output, but this check does not prove that.
+* **Limits:** one fixed-tilt system in one climate, not a tracker. The 1 kW rating and
+  orientation come from the RdTools example, not from my own inspection; the file has no
+  satellite wind speed, so test C assumes 1 m/s. Test A uses the measured sunlight directly, with no correction for reflection off the glass. Measured minutes with impossible sensor
+  values are dropped, and only complete hours or half hours are compared.
+
 ## Running it
 
 ```
 pip install -r requirements.txt
 python run_energy.py          # energy for both sites, dataset check, pointing error curve
 python run_rows.py            # single axis trackers in rows: shading and backtracking
+python validate_measured.py    # model vs measured output of a real array (downloads 114 MB)
 python economics.py           # break-even premiums and payback
 python controller_energy.py   # combines the controller simulation with the energy model
 python make_figures.py        # writes figures/*.png
@@ -272,3 +302,6 @@ python make_figures.py        # writes figures/*.png
 [^r-rows]: [`results/rows.csv`](results/rows.csv), produced by `run_rows.py`.
 [^martinez]: F. Martínez-Moreno, J. Muñoz and E. Lorenzo, "Experimental model to estimate shading losses on PV arrays," *Solar Energy Materials and Solar Cells* 94(12), 2298–2303, 2010. <https://doi.org/10.1016/j.solmat.2010.07.029> Implemented as `pvlib.shading.direct_martinez`; this repository applies its Eq. 6.
 [^shade1d]: K. S. Anderson and A. R. Jensen, "Shaded fraction and backtracking in single-axis trackers on rolling terrain," *J. Renewable Sustainable Energy* 16(2), 023504, 2024. <https://doi.org/10.1063/5.0202220>
+[^pvdaq]: C. Deline, K. Perry, M. Deceglie, M. Muller, W. Sekulic and D. Jordan, "Photovoltaic Data Acquisition (PVDAQ) Public Datasets," Open Energy Data Initiative, NREL, 2021. <https://doi.org/10.25984/1846021> (SOURCES.md #38)
+[^rdtools]: The data file and system description are from the RdTools example for PVDAQ system 4 (SOURCES.md #39): <https://github.com/NatLabRockies/rdtools/releases/download/3.0.0/pvdaq_system_4_2010-2016_subset_soil_signal.csv>. The file also contains a synthetic soiling signal, which is not used here; `ac_power` is the measured value.
+[^r-measured]: [`results/measured_validation.csv`](results/measured_validation.csv), produced by `validate_measured.py`.
