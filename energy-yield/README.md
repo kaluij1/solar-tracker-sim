@@ -9,8 +9,12 @@ direct rather than diffuse. This model asks:
 3. Does the extra energy pay for the tracker, for a home and for a solar farm?
 4. How much does the tracking controller itself matter? (This connects to the hardware-in-the-loop simulation in the rest of this repo.)
 
-Built with [pvlib](https://pvlib-python.readthedocs.io), NREL NSRDB typical-year weather data,
-and real equipment from the CEC database used by NREL's tools.
+Built with pvlib,[^pvlib] NSRDB typical-year weather data,[^nsrdb] and equipment from the
+CEC module and inverter databases that NREL's System Advisor Model and pvlib use.[^cec-db]
+
+> **How claims are backed.** Each statement is a published source (footnoted), a result
+> from this folder (footnoted with the file), or an assumption (labeled). All references:
+> [`../SOURCES.md`](../SOURCES.md).
 
 ## Answer in brief
 
@@ -24,37 +28,45 @@ and real equipment from the CEC database used by NREL's tools.
 | Home tracker pays off? | No | No |
 | Utility single axis tracker pays off? | Yes, at 2025 prices | Only if very cheap |
 
-* **Tilt is almost free energy,** and it matters more the farther you go from the equator.
-* **For homes, trackers don't pay off.** In Phoenix the extra energy justifies at most $0.57/W extra for single axis (or $1.05/W for dual axis) over 25 years, while trackers add $1.26 to $3.15/W to a home system.
-* **For solar farms, single axis tracking pays off because it's now nearly free.** In 2025, US projects with trackers cost $1.31/W DC vs $1.30/W DC for fixed racking (Berkeley Lab). The extra energy in Phoenix would justify up to $0.14/W. This is why 96% of new US utility solar capacity in 2025 used single axis trackers.
-* **The controller barely matters for energy, but it matters for wear.** Even the worst light-sensor controller loses under 0.2% of a year's energy, but the unfiltered one moves the motors 12 times as often as a controller that calculates the sun's position.
+Energy rows: [`results/summary.csv`](results/summary.csv). Verdicts: [`results/economics.csv`](results/economics.csv).
+
+* **Tilting adds 15 to 21% over lying flat,** and the gain was larger at the more northern site.[^r-summary]
+* **For homes, trackers don't pay off.** In Phoenix the extra energy justifies at most $0.57/W extra for single axis (or $1.05/W for dual axis) over 25 years,[^r-econ] while trackers add 40 to 100% to a system's cost,[^es-trackers] or $1.26 to $3.15/W on a $3.15/W home system.[^nrel-bench]
+* **For solar farms, single axis tracking pays off because it now costs about the same as fixed racking:** $1.31/W DC with trackers vs $1.30/W DC fixed, for US projects built in 2025.[^lbl2026] The extra energy in Phoenix would justify up to $0.14/W.[^r-econ] That is consistent with 96% of new US utility solar capacity in 2025 using single axis trackers.[^lbl2026]
+* **The controller barely matters for energy, but it matters for wear.** Even the worst light-sensor controller loses under 0.2% of a year's energy, but the unfiltered one moves the motors 12 times as often as a controller that calculates the sun's position.[^r-ctrl]
 
 ## System
 
-| Item | Choice |
-|---|---|
-| Modules | 12 × Canadian Solar CS1U-400MS (400 W mono-Si), 2 strings of 6 = 4.81 kW DC |
-| Inverter | SMA Sunny Boy 3.8 (3.85 kW AC), DC/AC ratio 1.25 |
-| Losses | 14.08% (PVWatts defaults: soiling, shading, mismatch, wiring, connections, LID, nameplate, availability) |
-| Mounting | Open rack (SAPM glass/polymer thermal model) |
-| Single axis tracker | Horizontal north-south axis, ±60° rotation, no backtracking |
-| Dual axis tracker | Faces the sun exactly (or with a set pointing error, for stage 2) |
+| Item | Choice | Basis |
+|---|---|---|
+| Modules | 12 × Canadian Solar CS1U-400MS (400 W mono-Si), 2 strings of 6 = 4.81 kW DC | CEC module database[^cec-db]; system size is my choice[^a-system] |
+| Inverter | SMA Sunny Boy 3.8 (3.85 kW AC), DC/AC ratio 1.25 | CEC inverter database[^cec-db] |
+| Losses | 14.08%: soiling 2, shading 3, mismatch 2, wiring 2, connections 0.5, light-induced degradation 1.5, nameplate 1, availability 3 (%) | PVWatts defaults[^pvwatts] |
+| Mounting | Open rack, glass/polymer module | SAPM thermal model[^sapm] |
+| Single axis tracker | Horizontal north-south axis, ±60° rotation, no backtracking | My choice[^a-system] |
+| Dual axis tracker | Faces the sun exactly (or with a set pointing error, for part 3) | Ideal case |
 
-String size: 6 modules keep the cold-morning open circuit voltage (about 343 V) under
-the inverter's 480 V limit, and the hot-afternoon operating voltage above its 195 V minimum.
+**String size.** The module's open circuit voltage is 53.4 V and drops by 0.147 V per °C;
+the inverter accepts at most 480 V and tracks power between 195 and 480 V.[^cec-db] Six
+modules give about 343 V open circuit on a 0 °C morning (6 × (53.4 + 25 × 0.147)), under
+the 480 V limit, and about 265 V at the operating point at 25 °C (6 × 44.1 V), above the
+195 V minimum.
 
 ## Weather data
 
 | Site | File | Notes |
 |---|---|---|
-| Phoenix, AZ | NSRDB TMY 2025 (`data/nsrdb/phoenix_tmy-2025.csv`) | Newest typical year, months drawn from 2001–2023. Timestamps are UTC and are converted to local standard time |
-| Des Moines, IA | NSRDB PSM v3 TMY from NREL SAM's sample files | Stand-in for the upper Midwest. No ground reflectivity column, so albedo is set to 0.2 |
+| Phoenix, AZ | NSRDB TMY 2025 (`data/nsrdb/phoenix_tmy-2025.csv`) | Newest typical year; its months come from 2001–2023 (see the Year column). Timestamps are UTC and are converted to local standard time |
+| Des Moines, IA | NSRDB PSM v3 TMY from NREL SAM's sample weather files[^sam-files] | My stand-in for a cloudier, more northern site. The file has no ground reflectivity column, so albedo is set to 0.2 (assumption) |
 
-A **typical meteorological year (TMY)** stitches together the most average version of each
-month from about 20 years of satellite data, so results describe a normal year rather than
-one unusually sunny or cloudy year.
+A **typical meteorological year (TMY)** joins 12 months, each picked from a different real
+year as the most typical version of that month, compared with the long-term record using
+Finkelstein-Schafer statistics.[^tmy3] It represents typical conditions, and is "not suited
+for designing systems to meet the worst-case conditions."[^tmy3] A **typical direct normal
+year (TDY)** uses the same method with all the weight on direct sunlight.[^tdy] Source
+details for every file: [`data/README.md`](data/README.md).
 
-**Does the choice of data matter?** Phoenix was run with five versions of the data:
+**Does the choice of data matter?** Phoenix was run with six versions of the data:[^r-dataset]
 
 | Dataset | Sunlight (GHI, kWh/m²) | Fixed (kWh/yr) | Single axis gain | Dual axis gain |
 |---|---|---|---|---|
@@ -71,16 +83,16 @@ The tracking gain moves by less than one percentage point across datasets, so th
 
 Every hour of the year:
 
-| Step | What it calculates | pvlib function |
-|---|---|---|
-| 1 | Sun position | `Location.get_solarposition` |
-| 2 | Panel orientation (flat, fixed, single axis, dual axis) | `tracking.singleaxis` |
-| 3 | Light on the tilted panel (Perez sky model, ground reflection) | `irradiance.get_total_irradiance` |
-| 4 | Light reflected off the glass at steep angles | `iam.physical`, `iam.marion_diffuse` |
-| 5 | Cell temperature from sun, air temperature and wind | `temperature.sapm_cell` |
-| 6 | DC power from the module's single diode model | `calcparams_cec`, `max_power_point` |
-| 7 | System losses | `pvwatts_losses` |
-| 8 | AC power, inverter efficiency and clipping | `inverter.sandia` |
+| Step | What it calculates | pvlib function | Method |
+|---|---|---|---|
+| 1 | Sun position | `Location.get_solarposition` | NREL Solar Position Algorithm[^spa] |
+| 2 | Panel orientation (flat, fixed, single axis, dual axis) | `tracking.singleaxis` | True tracking without backtracking[^backtrack] |
+| 3 | Light on the tilted panel, with sky and ground diffuse light | `irradiance.get_total_irradiance` | Perez sky model[^perez] |
+| 4 | Light reflected off the glass at steep angles | `iam.physical`, `iam.marion_diffuse` | Physical model[^desoto] and Marion's diffuse integration[^marion] |
+| 5 | Cell temperature from sun, air temperature and wind | `temperature.sapm_cell` | Sandia Array Performance Model[^sapm] |
+| 6 | DC power from the module's single diode model | `calcparams_cec`, `max_power_point` | CEC 6-parameter model[^dobos-cec][^desoto] |
+| 7 | System losses | `pvwatts_losses` | PVWatts defaults[^pvwatts] |
+| 8 | AC power, inverter efficiency and clipping | `inverter.sandia` | Sandia inverter model[^sandia-inv] |
 
 ## 1. Energy
 
@@ -93,15 +105,21 @@ Every hour of the year:
 | Per kW installed (kWh/kW) | 1,125 | 1,358 | 1,600 | 1,829 |
 | Capacity factor (DC basis) | 12.8% | 15.5% | 18.3% | 20.9% |
 
+Source: [`results/summary.csv`](results/summary.csv) and [`results/monthly.csv`](results/monthly.csv).
+
 ![Energy per kW by site](figures/yield_by_site.png)
 ![Monthly energy in Phoenix](figures/monthly_phoenix.png)
 ![A summer and a winter day in Phoenix](figures/daily_profiles_phoenix.png)
 
-* **The best fixed tilt follows latitude:** 32° in Phoenix (latitude 33.5°) and 38° in Des Moines (41.6°). The optimum is broad: anything within about 10° of it gives at least 98.5% of the best.
-* **Tracking gains less where the sky is hazier.** Single axis tracking gains 25% in Phoenix but only 18% in Des Moines, where 41% of the light is diffuse and arrives from the whole sky.
-* **Single axis tracking loses to fixed tilt from November to January in Phoenix.** The horizontal axis leaves the panel nearly flat at noon, a poor angle for the low winter sun.
-* **A flat panel beats a tilted one in early summer,** when the sun is nearly overhead at noon.
-* **Validation:** swapping in NREL's simpler PVWatts equations for the DC, temperature and inverter steps changes every result by less than 1.5%.
+* **The best fixed tilt follows latitude:** 32° in Phoenix (latitude 33.5°) and 38° in Des Moines (41.6°),[^r-tilt] as expected from the rule that a fixed panel collects the most over a year when tilted at about the latitude.[^pvedu-tilt] The optimum is broad: anything within about 10° of it gives at least 98.5% of the best.[^r-tilt]
+* **Tracking gained less at the hazier site.** Single axis tracking gains 25% in Phoenix but only 18% in Des Moines,[^r-summary] where 41% of the light is diffuse.[^r-summary] Trackers keep the panel at the best angle to the sun's beam, while flat panels already accept diffuse light from the whole sky,[^psu-tracking] so a site with more diffuse light has less for a tracker to gain.
+* **Single axis tracking loses to fixed tilt from November to January in Phoenix.**[^r-monthly] With a horizontal axis, the panel is nearly flat at noon, a poor angle for the low winter sun (see the December 21 profile).
+* **A flat panel beats a tilted one from May to July,** when the sun is nearly overhead at noon.[^r-monthly]
+
+**Checks against other sources**
+* Swapping in NREL's simpler PVWatts equations for the DC, temperature and inverter steps[^pvwatts] changes every result by less than 1.5% ([`results/summary.csv`](results/summary.csv), column `PVWatts cross-check`).
+* EnergySage puts single axis gains at 25 to 35% and says dual axis adds 5 to 10% more.[^es-trackers] Phoenix (+25% and +40%) falls within those ranges; cloudier Des Moines (+18%) falls below.
+* Berkeley Lab finds tracking adds more than 5 percentage points of capacity factor in the regions with the strongest sunlight.[^lbl2026] Here, single axis tracking adds 5.0 points in Phoenix (20.4% to 25.4%). Berkeley Lab reports capacity factor on an AC basis and this model on a DC basis, so this is a rough comparison.
 
 ![Energy vs tilt](figures/tilt_sweep.png)
 ![Where the energy goes](figures/loss_waterfall_phoenix.png)
@@ -114,13 +132,13 @@ then compared with what trackers really add to a system's cost.
 
 > break-even premium ($/W) = present value over 25 years of (extra kWh × value of electricity − extra maintenance)
 
-| Assumption | Residential | Utility scale | Source |
+| Assumption | Residential | Utility scale | Basis |
 |---|---|---|---|
-| Value of electricity | $0.15/kWh (avoided retail price) | $0.030/kWh ($30/MWh PPA) | EnergySage Arizona average, Nov 2026; Berkeley Lab Utility-Scale Solar 2026 (PPAs $25–35/MWh in the West) |
-| Base system cost | $3.15/W DC | $1.30/W DC | NREL Q1 2024 PV cost benchmark; Berkeley Lab 2026 (2025 fixed-tilt projects) |
-| What a tracker adds | 40–100% of system cost ($1.26–3.15/W) | $0.01/W (2025) to $0.20/W (2023 data) | EnergySage; Berkeley Lab |
-| Extra maintenance | $20/kW per year | $2/kW per year | Assumption |
-| Life, discount rate, degradation | 25 years, 6%, 0.5%/yr | same | Assumption |
+| Value of electricity | $0.15/kWh (avoided retail price) | $0.030/kWh ($30/MWh contract price) | Arizona average from customer bills, Nov 2026[^es-az]; PPA prices typically $25–35/MWh in CAISO and the non-ISO West[^lbl2026] |
+| Base system cost | $3.15/W DC | $1.30/W DC | NREL Q1 2024 benchmark[^nrel-bench]; 2025 fixed-tilt projects[^lbl2026] |
+| What a tracker adds | 40–100% of system cost ($1.26–3.15/W) | $0.01/W (2025 data) to $0.20/W (2023 data) | EnergySage[^es-trackers]; Berkeley Lab 2026[^lbl2026] and the NREL benchmark citing Berkeley Lab 2023 data[^nrel-bench] |
+| Extra maintenance | $20/kW per year | $2/kW per year | Assumption[^a-om] |
+| Life, discount rate, degradation | 25 years, 6%, 0.5%/yr | same | Assumption[^a-finance] |
 
 | Case | Extra energy | Break-even premium | Market premium | Simple payback | Verdict |
 |---|---|---|---|---|---|
@@ -131,18 +149,21 @@ then compared with what trackers really add to a system's cost.
 | Phoenix solar farm, single axis | +445 kWh/kW | $0.14/W | $0.01–0.20/W | 0.9–18 years | Pays off at 2025 prices |
 | Des Moines solar farm, single axis | +242 kWh/kW | $0.06/W | $0.01–0.20/W | 1.9–38 years | Pays off only if very cheap |
 
+Source: [`results/economics.csv`](results/economics.csv), produced by [`economics.py`](economics.py).
+
 ![Break-even tracker premium](figures/breakeven.png)
 
 Why homes and solar farms reach opposite answers: a home values each kWh about five times
-more ($0.15 vs $0.03), but a home tracker is a custom pole-mounted structure that costs
-more than the energy is worth, while a utility tracker is a mass-produced row of steel that
-now costs about the same as fixed racking.
+more ($0.15 vs $0.03),[^es-az][^lbl2026] but a home tracker raises the system's cost by 40 to
+100%,[^es-trackers] while a utility tracker added about 1% to the cost per watt in 2025
+($1.31 vs $1.30).[^lbl2026] EnergySage also notes that trackers are generally not worth it
+for residential installations, which are usually rooftop systems.[^es-trackers]
 
 ## 3. Does the controller matter?
 
 The dual axis hardware-in-the-loop simulation (`dual-axis/tests`) measures each
 controller's pointing error and motor activity over one time-lapse day. Here those errors
-are converted into a year of lost energy using the Phoenix dual axis model:
+are converted into a year of lost energy using the Phoenix dual axis model:[^r-ctrl]
 
 | Controller | Average pointing error | Energy lost per year | Servo moves | Reversals |
 |---|---|---|---|---|
@@ -151,15 +172,18 @@ are converted into a year of lost energy using the Phoenix dual axis model:
 | Light sensors, raw (cloudy) | 2.2° | 0.06% | 2,966 | 749 |
 | Light sensors, filtered (cloudy) | 3.9° | 0.17% | 409 | 7 |
 
+Source: [`results/controller_energy.csv`](results/controller_energy.csv) and [`results/pointing_error.csv`](results/pointing_error.csv).
+
 ![Pointing error vs energy](figures/pointing_error.png)
 ![Motor activity by controller](figures/controller_moves.png)
 
-Because the panel's output falls with the cosine of the pointing error, a few degrees off
-costs almost nothing (cos 4° = 0.998). The real cost of a noisy controller is motor wear
-and reliability: the raw light-sensor controller moves the servos 12 times as often as
-one that simply calculates where the sun is. That is why commercial trackers mostly
-calculate the sun's position from time and location, and use sensors only to confirm the
-panel's angle.
+Because a panel's output falls with the cosine of the angle between it and the sun,[^pvedu-tilt]
+a few degrees off costs almost nothing (cos 4° = 0.998). The real cost of a noisy
+controller is motor wear and reliability: the raw light-sensor controller moves the
+servos 12 times as often as one that simply calculates where the sun is.[^r-ctrl]
+Commercial trackers are described as pointing by a sun-position algorithm and confirming
+the angle with an inclinometer, since light sensors stop giving usable feedback under
+clouds.[^fredericks]
 
 ## Running it
 
@@ -175,9 +199,42 @@ python make_figures.py        # writes figures/*.png
 
 ## Limitations
 
-* One typical year per site. Real years vary by a few percent.
-* No row-to-row shading, so the single axis tracker does not backtrack. Utility arrays with close rows would gain somewhat less.
-* Losses use PVWatts defaults rather than measured values, and module degradation is a flat 0.5% per year.
-* Electricity is valued at a flat price. Real tariffs and wholesale prices vary by hour, and trackers produce more in the late afternoon, when power is often worth more, which this model does not credit.
-* Residential tracker costs come from a broad consumer-guide range, and the extra maintenance costs are assumptions.
-* The controller comparison uses a time-lapse day, a 45° latitude sun path, and modeled cloud and flicker noise.
+* One typical year per site. A TMY represents typical conditions, not any particular year or the worst case.[^tmy3]
+* No row-to-row shading. Real utility rows shade each other in the morning and evening, so trackers "backtrack," turning away from the sun and giving up some direct light;[^backtrack] utility arrays with close rows would gain somewhat less than modeled here.
+* Losses use PVWatts defaults[^pvwatts] rather than measured values, and module degradation is a flat 0.5% per year (assumption).[^a-finance]
+* Electricity is valued at a flat price. Berkeley Lab notes that tracking shifts production toward higher-priced late-afternoon hours,[^lbl-value] which this model does not credit.
+* Residential tracker costs come from a broad consumer-guide range,[^es-trackers] and the extra maintenance costs are assumptions.[^a-om]
+* The controller comparison uses a time-lapse day, a 45° latitude sun path, and modeled cloud and flicker noise (see the main README).
+
+[^pvlib]: K. S. Anderson, C. W. Hansen, W. F. Holmgren et al., "pvlib python: 2023 project update," *Journal of Open Source Software* 8(92), 5994, 2023. <https://doi.org/10.21105/joss.05994>. Version used: pvlib 0.16.1 ([`requirements.txt`](requirements.txt)).
+[^nsrdb]: M. Sengupta, Y. Xie, A. Lopez, A. Habte, G. Maclaurin and J. Shelby, "The National Solar Radiation Data Base (NSRDB)," *Renewable and Sustainable Energy Reviews* 89, 51–60, 2018. <https://doi.org/10.1016/j.rser.2018.03.003>
+[^cec-db]: California Energy Commission module and inverter parameter databases, as distributed with NREL's System Advisor Model and loaded by `pvlib.pvsystem.retrieve_sam` (entries `Canadian_Solar_Inc__CS1U_400MS` and `SMA_America__SB3_8_1SP_US_40__240V_`). Values quoted: V_oc 53.4 V, β_oc −0.147 V/°C, V_mp 44.1 V, γ −0.3448 %/°C; inverter 3,850 W AC, 480 V max DC, 195–480 V MPPT range. <https://github.com/NREL/SAM>
+[^a-system]: My design choice. A 4.8 kW system is a home-sized array (for comparison, NREL's Q1 2024 residential cost benchmark models an 8 kW system); 2 strings of 6 fit the inverter's voltage window (see String size). The ±60° single axis limit and no-backtracking setting describe a single isolated row.
+[^pvwatts]: A. P. Dobos, "PVWatts Version 5 Manual," NREL/TP-6A20-62641, 2014. <https://doi.org/10.2172/1158421>. The default loss values are as implemented in `pvlib.pvsystem.pvwatts_losses`, which cites this manual.
+[^sapm]: D. L. King, W. E. Boyson and J. A. Kratochvil, "Photovoltaic Array Performance Model," Sandia National Laboratories, SAND2004-3535, 2004. <https://www.osti.gov/biblio/919131>
+[^sam-files]: NREL System Advisor Model, sample weather files in `deploy/solar_resource`. <https://github.com/NREL/SAM>
+[^tmy3]: S. Wilcox and W. Marion, *Users Manual for TMY3 Data Sets*, NREL/TP-581-43156, 2008, section 1.1 and chapter 2. <https://www.nrel.gov/docs/fy08osti/43156.pdf>
+[^tdy]: M. Sengupta and A. Habte, "Evaluating the Use of POA Irradiance to Develop Typical Years," NREL/CP-5D00-74768, 2019: "a typical DNI year (TDY) can be constructed by assigning a 100% weight to the ... DNI." <https://nrel.gov/docs/fy20osti/74768.pdf>
+[^spa]: I. Reda and A. Andreas, "Solar position algorithm for solar radiation applications," *Solar Energy* 76(5), 577–589, 2004. <https://doi.org/10.1016/j.solener.2003.12.003>
+[^backtrack]: K. Anderson and M. Mikofski, "Slope-Aware Backtracking for Single-Axis Trackers," NREL/TP-5K00-76626, 2020: backtracking turns the tracker "so that the row's shadow is shortened and misses the row behind it," and "sacrifices as little beam irradiance as possible." <https://doi.org/10.2172/1660126>
+[^perez]: R. Perez, P. Ineichen, R. Seals, J. Michalsky and R. Stewart, "Modeling daylight availability and irradiance components from direct and global irradiance," *Solar Energy* 44(5), 271–289, 1990. <https://archive-ouverte.unige.ch/unige:17206>
+[^desoto]: W. De Soto, S. A. Klein and W. A. Beckman, "Improvement and validation of a model for photovoltaic array performance," *Solar Energy* 80, 78–88, 2006. <https://doi.org/10.1016/j.solener.2005.06.010>
+[^marion]: B. Marion, "Numerical method for angle-of-incidence correction factors for diffuse radiation incident photovoltaic modules," *Solar Energy* 147, 344–348, 2017. <https://doi.org/10.1016/j.solener.2017.03.027>
+[^dobos-cec]: A. Dobos, "An Improved Coefficient Calculator for the California Energy Commission 6 Parameter Photovoltaic Module Model," *Journal of Solar Energy Engineering* 134, 2012. <https://doi.org/10.1115/1.4005759>
+[^sandia-inv]: D. King, S. Gonzalez, G. Galbraith and W. Boyson, "Performance Model for Grid-Connected Photovoltaic Inverters," Sandia National Laboratories, SAND2007-5036, 2007. <https://doi.org/10.2172/920449>
+[^pvedu-tilt]: PVEducation, "Solar Radiation on a Tilted Surface": power "will always be at its maximum when the PV module is perpendicular to the sun," and for a fixed tilt "the tilt angle is equal to the latitude of the location" maximizes yearly output. <https://www.pveducation.org/es/pvcdrom/solar-radiation-tilted-surface>
+[^psu-tracking]: Penn State, EME 812, "3.1. Why tracking?": a tracker "maintains the optimum angle to receive the most of the solar radiation," and "tracking is not strictly required for regular flat panel PV as they accept both beam and diffuse radiation." <https://courses.ems.psu.edu/eme812/node/519>
+[^es-trackers]: EnergySage, "Is a solar tracking system worth it?": trackers add "40 to 100 percent" to system cost; single axis gives "a performance gain of 25 to 35 percent"; dual axis adds "five to 10 percent" more; trackers are generally not worth it for residential installations, which are usually rooftop systems. <https://www.energysage.com/business-solutions/solar-trackers-everything-need-know/>
+[^es-az]: EnergySage, "Cost of electricity in Arizona": average residential rate 15 cents per kWh as of November 2026, based on customer bills from the past 12 months. <https://www.energysage.com/local-data/electricity-cost/az/>
+[^nrel-bench]: NREL, PV system cost benchmark for Q1 2024 (report 92257, 2023 dollars): residential (8 kW) modeled market price $3.15/W DC; cites a tracking premium of $0.20/W DC from Berkeley Lab 2023 data. <https://nrel.gov/docs/fy25osti/92257.pdf>
+[^lbl2026]: Lawrence Berkeley National Laboratory, *Utility-Scale Solar, 2026 Edition* (slides, Oct. 2026): 96% of new 2025 capacity used single-axis tracking (slide 25); 2025 installed cost $1.31/W DC tracking vs $1.30/W DC fixed-tilt (slide 32); tracking adds "more than five percentage points" of capacity factor in the regions with the strongest solar resource; PPA prices typically $25–35/MWh in CAISO and the non-ISO West. <https://eta-publications.lbl.gov/sites/default/files/2026-10/utility_scale_solar_2026_edition_slides.pdf>
+[^lbl-value]: J. H. Kim, A. D. Mills, R. Wiser et al., "Project developer options to enhance the value of solar electricity as solar and storage penetrations increase," Berkeley Lab, Sept. 2021: tracking and similar options shift "solar production to higher-priced hours in the mornings and, especially, in late afternoons to evening." <https://emp.lbl.gov/news/project-developer-options-enhance-value-solar>
+[^fredericks]: The Fredericks Company, "AN 1004: Inclinometers for Solar Tracking Systems": "The algorithm tells the system where to point," the inclinometer "confirms that the system is indeed pointing in the correct direction," and "when clouds obscure the sun, the photodiode may no longer provide usable position feedback." <https://www.frederickscompany.com/application-notes/inclinometers-for-solar-tracking-systems/>
+[^a-om]: Assumption, not from a published source. $20/kW per year (about $100 a year for a 4.8 kW home system) and $2/kW per year for utility trackers are placeholders; for scale, Berkeley Lab's 2026 report puts the median total O&M cost of utility solar at about $11/kW(AC) per year (slide 36). Higher maintenance would only make trackers less attractive.
+[^a-finance]: Assumption. A 25-year life, a 6% real discount rate and 0.5%/yr module degradation are round numbers I chose for this estimate, not taken from a specific source. A higher discount rate or faster degradation would lower every break-even premium.
+[^r-summary]: This folder: [`results/summary.csv`](results/summary.csv), from [`run_energy.py`](run_energy.py).
+[^r-tilt]: This folder: [`results/tilt_sweep.csv`](results/tilt_sweep.csv), from [`run_energy.py`](run_energy.py).
+[^r-monthly]: This folder: [`results/monthly.csv`](results/monthly.csv), from [`run_energy.py`](run_energy.py).
+[^r-dataset]: This folder: [`results/dataset_check.csv`](results/dataset_check.csv), from [`run_energy.py`](run_energy.py).
+[^r-econ]: This folder: [`results/economics.csv`](results/economics.csv), from [`economics.py`](economics.py).
+[^r-ctrl]: This folder: [`results/controller_energy.csv`](results/controller_energy.csv), from [`controller_energy.py`](controller_energy.py), using [`results/hil_dual_axis.csv`](results/hil_dual_axis.csv) and [`results/pointing_error.csv`](results/pointing_error.csv).
