@@ -22,6 +22,7 @@ Open `solar-sim.html` in any browser. No install, no server.
 | File | What it is |
 |---|---|
 | `solar-sim.html`, `style.css` | The page (the same page as on my website) |
+| `scene3d.js` | The 3D view (three.js, loaded from a CDN). Drawing only: every angle and number comes from `solar-model.js`. Without WebGL the page falls back to a flat drawing |
 | `solar-model.js` | The physics, ported from `energy-yield/energy_model.py` |
 | `controller-model.js` | The tracker and its controllers, ported from the Wokwi chip and sketch |
 | `weather-data.js` | Hourly weather for both sites, plus module, inverter and loss parameters, exported from the pvlib model |

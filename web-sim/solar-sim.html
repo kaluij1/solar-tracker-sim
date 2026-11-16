@@ -43,7 +43,18 @@
   }
   .card-box { border: 1px solid var(--rule); border-radius: 12px; background: var(--card); }
   .scene-wrap { position: relative; overflow: hidden; }
-  #scene { display: block; width: 100%; height: 100%; min-height: 360px; aspect-ratio: 16 / 10; }
+  #scene, #scene3d { display: block; width: 100%; height: 100%; min-height: 360px; aspect-ratio: 16 / 10; }
+  #scene3d { cursor: grab; touch-action: pan-y; }
+  #scene3d:active { cursor: grabbing; }
+  .scene-wrap.is3d #scene, .scene-wrap:not(.is3d) #scene3d, .scene-wrap:not(.is3d) .scene-info, .scene-wrap:not(.is3d) #labels3d { display: none; }
+  .scene-wrap { transition: background .4s ease; }
+  #labels3d { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .lab3d { position: absolute; transform: translate(-50%, 0); text-align: center; white-space: nowrap; font-size: .8rem; line-height: 1.3; background: rgba(250,248,245,.84); padding: 3px 8px; border-radius: 6px; }
+  .lab3d b { display: block; font-weight: 600; }
+  .lab3d b i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
+  .lab3d span { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .scene-info { position: absolute; right: 14px; top: 12px; text-align: right; font-size: .8rem; color: var(--muted); line-height: 1.4; }
+  .scene-info b { display: block; color: var(--fg); font-weight: 600; font-size: .86rem; }
   .scene-cap {
     position: absolute; left: 14px; top: 12px; font-size: .8rem; color: var(--muted);
     background: rgba(255,255,255,.75); padding: 4px 9px; border-radius: 6px;
@@ -149,7 +160,8 @@
     .meter, .meter-head { grid-template-columns: 6.2rem minmax(0, 1fr) 3.8rem 4rem; gap: 7px; font-size: .82rem; }
     .weather, .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
     .stat b { font-size: 1.25rem; }
-    #scene { min-height: 320px; }
+    #scene, #scene3d { min-height: 320px; }
+    .lab3d { font-size: .7rem; }
     #ctrlScene { aspect-ratio: 4 / 3; }
     #rowScene { aspect-ratio: 4 / 3; }
     .scene-cap { display: none; }
@@ -188,6 +200,9 @@
       <div class="bench">
         <div class="card-box scene-wrap">
           <canvas id="scene" role="img" aria-label="Sun and four solar panels: flat, fixed tilt, single axis tracker, dual axis tracker"></canvas>
+          <canvas id="scene3d" role="img" aria-label="3D model of the sun and four solar panel mounts: flat, fixed tilt, single axis tracker, dual axis tracker"></canvas>
+          <div id="labels3d" aria-hidden="true"></div>
+          <div class="scene-info" id="sceneInfo"></div>
           <span class="scene-cap" id="sceneCap">Looking north. East is on the right.</span>
         </div>
         <div class="card-box panel-side">
@@ -444,6 +459,9 @@
   <div class="inner">© 2026 Jay Kaluiji</div>
 </footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="scene3d.js"></script>
 <script src="weather-data.js"></script>
 <script src="solar-model.js"></script>
 <script src="controller-model.js"></script>
@@ -1137,7 +1155,24 @@
     return "rgb(" + r + "," + g + "," + bl + ")";
   }
 
+  var sceneWrap = scene.parentNode, scene3d = null;
+  try { if (window.Scene3D) scene3d = window.Scene3D.create(document.getElementById("scene3d"), document.getElementById("labels3d"), SETUPS, COLOR, NAME); } catch (err) { scene3d = null; }
+  if (scene3d) {
+    sceneWrap.classList.add("is3d");
+    document.getElementById("sceneCap").textContent = window.matchMedia("(pointer: coarse)").matches ? "Looking north. East is on the right." : "Looking north. Drag to look around.";
+  }
   function drawScene(e) {
+    if (!scene3d) return drawScene2D(e);
+    if (scene3d.pathFor !== state.profile) { scene3d.setPath(state.profile.sunPath); scene3d.pathFor = state.profile; }
+    var st = scene3d.update(e), el_ = 90 - e.sun.zenith;
+    function hex(c) { var m = c.match(/\d+/g); return "#" + m.slice(0, 3).map(function (x) { return ("0" + (+x).toString(16)).slice(-2); }).join(""); }
+    var top = st.day ? mix(hex(mix("#F3D9B8", v("--sky-top"), st.low)), "#C9D3DD", st.cloudy * 0.6) : "#8E98A8";
+    sceneWrap.style.background = "linear-gradient(" + top + ", " + (st.day ? v("--sky-low") : "#C9CDD3") + ")";
+    var info = document.getElementById("sceneInfo"); info.textContent = "";
+    info.appendChild(el("b", null, dateLabel(state.day) + ", " + timeLabel(state.time)));
+    info.appendChild(document.createTextNode(st.day ? "Sun " + el_.toFixed(1) + "° high, azimuth " + e.sun.azimuth.toFixed(0) + "°" : "Sun below the horizon"));
+  }
+  function drawScene2D(e) {
     var F = fitCanvas(scene), ctx = F.ctx, W = F.w, H = F.h;
     var S = { cx: W / 2, cy: H * 0.72, k: Math.min(W / 17, H / 11.5) };
     var el_ = 90 - e.sun.zenith, day = el_ > 0;
