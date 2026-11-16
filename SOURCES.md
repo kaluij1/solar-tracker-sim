@@ -31,6 +31,7 @@ documents below are cited under the name they were published with.
 |---|---|---|
 | 8 | K. S. Anderson, C. W. Hansen, W. F. Holmgren et al., "pvlib python: 2023 project update," *JOSS* 8(92), 5994, 2023. <https://doi.org/10.21105/joss.05994> | The modeling library (version 0.16.1) |
 | 9 | I. Reda and A. Andreas, "Solar position algorithm for solar radiation applications," *Solar Energy* 76(5), 577–589, 2004. <https://doi.org/10.1016/j.solener.2003.12.003> | Sun position every hour; solstice sunrise directions |
+| 35 | NOAA Global Monitoring Laboratory, "Solar Calculation Details." <https://gml.noaa.gov/grad/solcalc/calcdetails.html> | The calculator is "based on equations from Astronomical Algorithms, by Jean Meeus"; the browser simulator (`web-sim/solar-model.js`) uses these equations |
 | 10 | R. Perez, P. Ineichen, R. Seals, J. Michalsky and R. Stewart, "Modeling daylight availability and irradiance components from direct and global irradiance," *Solar Energy* 44(5), 271–289, 1990. <https://archive-ouverte.unige.ch/unige:17206> | Light on a tilted panel (Perez sky model) |
 | 11 | W. De Soto, S. A. Klein and W. A. Beckman, "Improvement and validation of a model for photovoltaic array performance," *Solar Energy* 80, 78–88, 2006. <https://doi.org/10.1016/j.solener.2005.06.010> | Glass reflection model; single diode model |
 | 12 | B. Marion, "Numerical method for angle-of-incidence correction factors for diffuse radiation incident photovoltaic modules," *Solar Energy* 147, 344–348, 2017. <https://doi.org/10.1016/j.solener.2017.03.027> | Reflection of diffuse light |
@@ -79,6 +80,7 @@ documents below are cited under the name they were published with.
 | Controller pointing error, moves, reversals, energy cost | [`energy-yield/results/controller_energy.csv`](energy-yield/results/controller_energy.csv), [`energy-yield/results/hil_dual_axis.csv`](energy-yield/results/hil_dual_axis.csv) | `dual-axis/tests` (`--csv`), `energy-yield/controller_energy.py` |
 | Single axis controller results and noise | Output of `make test` | `single-axis/tests/closed_loop_test.c` |
 | Dual axis controller results | Output of `make test` | `dual-axis/tests/closed_loop_test.c` |
+| Browser simulator agrees with pvlib (annual energy within 0.57%, sun position within 0.03°) | [`web-sim/validation.json`](web-sim/validation.json) | `web-sim/validate.js` |
 
 ## Personal account
 

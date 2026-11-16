@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solar Tracking Simulator</title>
+<meta name="description" content="A live simulation by Jay Kaluiji: real NSRDB weather, published solar models, and four panel setups, checked against pvlib.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  /* Simulator: a lab bench. Scene and controls side by side, readouts in tabular figures.
+     Setup colors keep a fixed order everywhere: flat, fixed tilt, single axis, dual axis. */
+  :root {
+    --c-flat: #eda100;
+    --c-fixed: #2a78d6;
+    --c-single: #eb6834;
+    --c-dual: #1baf7a;
+    --sky-top: #DCE7F2;
+    --sky-low: #F4EFE6;
+    --ground: #E7E1D6;
+    --panel: #1F2F4A;
+    --read: 40rem;
+  }
+  body { background: var(--bg); }
+  .sim-head { padding-block: clamp(36px, 6vw, 64px) clamp(20px, 3vw, 28px); }
+  .sim-head h1 {
+    margin: 0 0 14px; font-family: var(--font-display); font-weight: 400;
+    font-size: clamp(2.3rem, 5.6vw, 3.6rem); line-height: 1.04; letter-spacing: -.02em; max-width: 16em;
+  }
+  .sim-head .lede { margin: 0; max-width: var(--read); font-size: clamp(1.05rem, 1.9vw, 1.2rem); line-height: 1.5; }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px 10px; margin-top: 18px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px; font-size: .85rem; padding: 6px 12px;
+    border: 1px solid var(--rule); border-radius: 99px; background: var(--card); color: var(--muted);
+  }
+  .badge b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .badge .dot { width: 8px; height: 8px; border-radius: 50%; background: #1F8A5B; flex: none; }
+
+  .bench {
+    display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 18px;
+    margin-top: 8px;
+  }
+  .card-box { border: 1px solid var(--rule); border-radius: 12px; background: var(--card); }
+  .scene-wrap { position: relative; overflow: hidden; }
+  #scene { display: block; width: 100%; height: 100%; min-height: 360px; aspect-ratio: 16 / 10; }
+  .scene-cap {
+    position: absolute; left: 14px; top: 12px; font-size: .8rem; color: var(--muted);
+    background: rgba(255,255,255,.75); padding: 4px 9px; border-radius: 6px;
+  }
+  .panel-side { padding: 18px 18px 16px; display: flex; flex-direction: column; gap: 16px; }
+  .ctl-label { display: block; font-size: .72rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button, .btn {
+    font: inherit; font-size: .88rem; font-weight: 500; padding: 7px 13px; border-radius: 99px; cursor: pointer;
+    border: 1px solid var(--rule); background: var(--bg); color: var(--muted);
+    transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+  }
+  .seg button:hover, .btn:hover { color: var(--fg); border-color: #CFC9C0; }
+  .seg button[aria-pressed="true"], .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { color: #fff; filter: brightness(1.08); }
+  .seg button:focus-visible, .btn:focus-visible, input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .row output { margin-left: auto; font-variant-numeric: tabular-nums; font-size: .92rem; color: var(--fg); font-weight: 500; white-space: nowrap; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); margin: 4px 0 0; }
+  .weather { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .wcell { padding: 8px 10px; border: 1px solid var(--rule); border-radius: 8px; background: var(--bg); }
+  .wcell span { display: block; font-size: .7rem; color: var(--muted); letter-spacing: .04em; }
+  .wcell b { font-variant-numeric: tabular-nums; font-weight: 600; font-size: .98rem; }
+
+  .meters { display: grid; gap: 9px; }
+  .meter { display: grid; grid-template-columns: 6.6rem minmax(0, 1fr) 3.2rem 3.4rem; gap: 10px; align-items: center; font-size: .88rem; }
+  .meter .nm { display: flex; align-items: center; gap: 7px; }
+  .meter .sw { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .meter .bar-track { height: 10px; border-radius: 5px; background: var(--bg); border: 1px solid var(--rule); overflow: hidden; }
+  .meter .bar { height: 100%; width: 0; border-radius: 5px; transition: width .15s linear; }
+  .meter .kw, .meter .kwh { text-align: right; font-variant-numeric: tabular-nums; }
+  .meter .kwh { color: var(--muted); }
+  .meter-head { display: grid; grid-template-columns: 6.6rem minmax(0, 1fr) 3.2rem 3.4rem; gap: 10px; font-size: .72rem; color: var(--muted); letter-spacing: .04em; }
+  .meter-head span:nth-child(3), .meter-head span:nth-child(4) { text-align: right; }
+
+  .lower { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 18px; margin-top: 18px; }
+  .box-pad { padding: 18px 18px 14px; }
+  .box-title { margin: 0 0 2px; font-weight: 600; font-size: 1rem; }
+  .box-sub { margin: 0 0 12px; font-size: .86rem; color: var(--muted); }
+  .chart { position: relative; height: 240px; }
+  .chart canvas { display: block; width: 100%; height: 100%; }
+  .tip {
+    position: absolute; pointer-events: none; background: var(--card); border: 1px solid var(--rule);
+    border-radius: 8px; padding: 8px 10px; font-size: .8rem; box-shadow: 0 6px 18px rgba(36,39,43,.08);
+    white-space: nowrap; display: none; z-index: 2; font-variant-numeric: tabular-nums;
+  }
+  .tip div { display: flex; align-items: center; gap: 6px; }
+  .tip i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0 0 8px; padding: 0; list-style: none; font-size: .82rem; color: var(--muted); }
+  .legend li { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  table { border-collapse: collapse; width: 100%; font-size: .86rem; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 7px 6px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { font-weight: 600; color: var(--muted); font-size: .76rem; }
+  td.good { color: #1F6142; }
+  .note { margin: 10px 0 0; font-size: .82rem; color: var(--muted); }
+
+  .section-sim { padding-block: clamp(48px, 7vw, 80px); border-top: 1px solid var(--rule); }
+  .section-sim h2 { margin: 0 0 12px; font-family: var(--font-display); font-weight: 400; font-size: clamp(1.7rem, 3.4vw, 2.3rem); line-height: 1.15; max-width: 20em; }
+  .section-sim .prose { max-width: var(--read); }
+  .section-sim .prose p { margin: 0 0 14px; }
+  .step { margin: 0 0 10px; font-size: .78rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
+
+  .ctrl-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 18px; margin-top: 22px; }
+  #ctrlScene { display: block; width: 100%; aspect-ratio: 16 / 9; }
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .stat { padding: 10px 12px; border: 1px solid var(--rule); border-radius: 8px; background: var(--bg); }
+  .stat span { display: block; font-size: .7rem; color: var(--muted); letter-spacing: .04em; }
+  .stat b { font-family: var(--font-display); font-weight: 500; font-size: 1.6rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stat.alert b { color: #B4471F; }
+  .strip { position: relative; height: 150px; }
+  .strip canvas { width: 100%; height: 100%; display: block; }
+
+  .cite { font-size: .68em; line-height: 0; margin-left: 1px; }
+  .cite a { color: var(--accent); text-decoration: none; padding: 0 1px; }
+  .cite a:hover { text-decoration: underline; }
+  .sources { margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 9px; max-width: 46rem; font-size: .88rem; color: var(--muted); }
+  .sources li { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr); gap: 8px; }
+  .sources .n { font-weight: 600; color: var(--fg); }
+  .sources a { color: var(--accent); overflow-wrap: anywhere; }
+  .sources li:target { background: var(--card); outline: 1px solid var(--rule); border-radius: 6px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 14px 28px; margin-top: 26px; }
+  .back { font-size: .94rem; color: var(--muted); text-decoration: none; }
+
+  @media (max-width: 940px) {
+    .bench, .lower, .ctrl-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    .meter, .meter-head { grid-template-columns: 6.2rem minmax(0, 1fr) 3.8rem 4rem; gap: 7px; font-size: .82rem; }
+    .weather, .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .stat b { font-size: 1.25rem; }
+    #scene { min-height: 320px; }
+    #ctrlScene { aspect-ratio: 4 / 3; }
+    .scene-cap { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .meter .bar { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="inner nav-row">
+    <a class="monogram" href="index.html" aria-label="Home">JK</a>
+    <nav aria-label="Main">
+      <a href="index.html#projects">Projects</a>
+      <a href="solar-tracking.html">Case study</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="sim-head">
+    <div class="inner">
+      <p class="eyebrow">Live simulation · Solar energy</p>
+      <h1>Watch four solar panels chase the sun</h1>
+      <p class="lede">Pick a place and a day. The sun moves along its real path, the weather comes from NREL's typical-year data for that site,<sup class="cite"><a href="#src-21">21</a></sup> and each panel turns the way a real mount would. The physics runs in your browser using the same published models as my full analysis.</p>
+      <div class="badges" id="badges"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="bench-title">
+    <div class="inner">
+      <h2 id="bench-title" class="visually-hidden" style="position:absolute;left:-9999px">Simulator</h2>
+      <div class="bench">
+        <div class="card-box scene-wrap">
+          <canvas id="scene" role="img" aria-label="Sun and four solar panels: flat, fixed tilt, single axis tracker, dual axis tracker"></canvas>
+          <span class="scene-cap" id="sceneCap">Looking north. East is on the right.</span>
+        </div>
+        <div class="card-box panel-side">
+          <div>
+            <span class="ctl-label" id="lbl-site">Site</span>
+            <div class="seg" role="group" aria-labelledby="lbl-site" id="siteSeg"></div>
+          </div>
+          <div>
+            <div class="row"><label class="ctl-label" for="day" style="margin:0">Day of year</label><output id="dayOut"></output></div>
+            <input type="range" id="day" min="1" max="365" step="1" value="172">
+          </div>
+          <div>
+            <div class="row"><label class="ctl-label" for="time" style="margin:0">Time (local standard)</label><output id="timeOut"></output></div>
+            <input type="range" id="time" min="4" max="20.5" step="0.05" value="12">
+            <div class="row" style="margin-top:10px">
+              <button class="btn primary" type="button" id="play">Play the day</button>
+              <div class="seg" role="group" aria-label="Playback speed" id="speedSeg">
+                <button type="button" data-speed="0.5" aria-pressed="false">Slow</button>
+                <button type="button" data-speed="1.5" aria-pressed="true">Normal</button>
+                <button type="button" data-speed="4" aria-pressed="false">Fast</button>
+              </div>
+            </div>
+          </div>
+          <div>
+            <span class="ctl-label">This hour's weather (NSRDB)<sup class="cite"><a href="#src-21">21</a></sup></span>
+            <div class="weather">
+              <div class="wcell"><span>Direct beam</span><b id="wDni">–</b></div>
+              <div class="wcell"><span>Diffuse sky</span><b id="wDhi">–</b></div>
+              <div class="wcell"><span>Air temp</span><b id="wTemp">–</b></div>
+            </div>
+          </div>
+          <div>
+            <div class="meter-head"><span>Setup</span><span>Power now</span><span>kW</span><span>kWh</span></div>
+            <div class="meters" id="meters"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lower">
+        <div class="card-box box-pad">
+          <p class="box-title">Power through the day</p>
+          <p class="box-sub" id="daySub">AC output of a 4.8 kW system. Drag across the chart to read values.</p>
+          <ul class="legend" id="dayLegend"></ul>
+          <div class="chart" id="dayChartWrap"><canvas id="dayChart" aria-label="Power through the day for each setup"></canvas><div class="tip" id="dayTip"></div></div>
+        </div>
+        <div class="card-box box-pad">
+          <p class="box-title">A full year, computed in your browser</p>
+          <p class="box-sub" id="yearSub">8,760 hours of real weather, compared with the full pvlib model.<sup class="cite"><a href="#src-8">8</a></sup></p>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>Setup</th><th>This page</th><th>pvlib</th><th>Diff.</th></tr></thead>
+              <tbody id="yearTable"></tbody>
+            </table>
+          </div>
+          <p class="note" id="yearNote"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-sim" aria-labelledby="ctrl-title">
+    <div class="inner">
+      <p class="step">Replay the controller</p>
+      <h2 id="ctrl-title">Why my tracker twitched, and how the fix worked</h2>
+      <div class="prose">
+        <p>This is my single axis tracker's control loop, ported from the hardware-in-the-loop simulation: two light sensors behind a divider wall, a 10-bit ADC,<sup class="cite"><a href="#src-30">30</a></sup> and a servo that turns at SG90 speed.<sup class="cite"><a href="#src-32">32</a></sup> Add clouds and reflections, then compare the original logic, the averaged logic with a deadband, and a controller that calculates where the sun is.<sup class="cite"><a href="#src-6">6</a></sup> The noise levels are my assumptions, chosen to reproduce the twitching we saw outside.<sup class="cite"><a href="#src-a">A</a></sup></p>
+      </div>
+      <div class="ctrl-grid">
+        <div class="card-box" style="overflow:hidden">
+          <canvas id="ctrlScene" role="img" aria-label="Single axis tracker with two light sensors following the sun"></canvas>
+          <div class="box-pad" style="padding-top:6px">
+            <p class="box-sub" style="margin-bottom:6px">Sun angle (dashed) and panel angle (solid), last 20 seconds</p>
+            <div class="strip"><canvas id="strip" aria-label="Sun angle and panel angle over time"></canvas></div>
+          </div>
+        </div>
+        <div class="card-box panel-side">
+          <div>
+            <span class="ctl-label" id="lbl-mode">Controller</span>
+            <div class="seg" role="group" aria-labelledby="lbl-mode" id="modeSeg">
+              <button type="button" data-mode="raw" aria-pressed="true">Original</button>
+              <button type="button" data-mode="filtered" aria-pressed="false">Averaged + deadband</button>
+              <button type="button" data-mode="calculated" aria-pressed="false">Calculated sun</button>
+            </div>
+          </div>
+          <div>
+            <div class="row"><label class="ctl-label" for="cloud" style="margin:0">Cloud cover</label><output id="cloudOut">30%</output></div>
+            <input type="range" id="cloud" min="0" max="80" step="1" value="30">
+          </div>
+          <div>
+            <div class="row"><label class="ctl-label" for="flicker" style="margin:0">Reflection flicker</label><output id="flickerOut">10%</output></div>
+            <input type="range" id="flicker" min="0" max="30" step="1" value="10">
+          </div>
+          <div class="row">
+            <button class="btn primary" type="button" id="ctrlPlay">Pause</button>
+            <button class="btn" type="button" id="ctrlReset">Restart the sweep</button>
+          </div>
+          <div class="stats">
+            <div class="stat" id="stRev"><span>Reversals</span><b id="revOut">0</b></div>
+            <div class="stat"><span>Servo moves</span><b id="movesOut">0</b></div>
+            <div class="stat"><span>Avg. error</span><b id="errOut">–</b></div>
+          </div>
+          <p class="note" id="ctrlNote">The sun crosses 80° of sky in 120 seconds, a time lapse, then the sweep restarts.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-sim" aria-labelledby="how-title">
+    <div class="inner">
+      <p class="step">How it works</p>
+      <h2 id="how-title">The same physics as the full model, small enough for a browser</h2>
+      <div class="prose">
+        <p>Every hour of the year, the page finds the sun with the NOAA solar equations,<sup class="cite"><a href="#src-35">35</a></sup> then splits the light on each panel into the direct beam, sky light using the Perez model,<sup class="cite"><a href="#src-10">10</a></sup> and light reflected off the ground. It removes what the glass reflects,<sup class="cite"><a href="#src-11">11</a>,<a href="#src-12">12</a></sup> works out how hot the cells get with Sandia's model,<sup class="cite"><a href="#src-13">13</a></sup> and converts to DC and AC power with the PVWatts equations and 14.08% system losses.<sup class="cite"><a href="#src-16">16</a></sup> The panels and inverter use real specifications from the CEC database.<sup class="cite"><a href="#src-17">17</a></sup></p>
+        <p id="howCheck"></p>
+        <p>The one simplification: the full model uses a detailed single diode model for the panel and Sandia's inverter model,<sup class="cite"><a href="#src-15">15</a></sup> while this page uses the lighter PVWatts equations for both. Between hours, the weather is interpolated from the hourly averages.</p>
+      </div>
+      <div class="cta">
+        <a class="text-link" href="solar-tracking.html">Read the full case study <span aria-hidden="true">→</span></a>
+        <a class="text-link" href="https://github.com/kaluij1/solar-tracker-sim/tree/main/web-sim" target="_blank" rel="noopener">Simulator code and validation on GitHub <span aria-hidden="true">→</span></a>
+      </div>
+      <p class="step" style="margin-top:44px">Sources</p>
+      <ul class="sources">
+        <li id="src-6"><span class="n">6</span><span>The Fredericks Company, "AN 1004: Inclinometers for Solar Tracking Systems." <a href="https://www.frederickscompany.com/application-notes/inclinometers-for-solar-tracking-systems/" target="_blank" rel="noopener">frederickscompany.com</a></span></li>
+        <li id="src-8"><span class="n">8</span><span>K. S. Anderson et al., "pvlib python: 2023 project update," <i>JOSS</i> 8(92), 5994, 2023. <a href="https://doi.org/10.21105/joss.05994" target="_blank" rel="noopener">doi.org/10.21105/joss.05994</a></span></li>
+        <li id="src-9"><span class="n">9</span><span>I. Reda and A. Andreas, "Solar position algorithm for solar radiation applications," <i>Solar Energy</i> 76(5), 2004. <a href="https://doi.org/10.1016/j.solener.2003.12.003" target="_blank" rel="noopener">doi.org/10.1016/j.solener.2003.12.003</a></span></li>
+        <li id="src-10"><span class="n">10</span><span>R. Perez et al., "Modeling daylight availability and irradiance components from direct and global irradiance," <i>Solar Energy</i> 44(5), 1990. <a href="https://archive-ouverte.unige.ch/unige:17206" target="_blank" rel="noopener">archive-ouverte.unige.ch/unige:17206</a></span></li>
+        <li id="src-11"><span class="n">11</span><span>W. De Soto, S. A. Klein and W. A. Beckman, <i>Solar Energy</i> 80, 2006. <a href="https://doi.org/10.1016/j.solener.2005.06.010" target="_blank" rel="noopener">doi.org/10.1016/j.solener.2005.06.010</a></span></li>
+        <li id="src-12"><span class="n">12</span><span>B. Marion, <i>Solar Energy</i> 147, 2017. <a href="https://doi.org/10.1016/j.solener.2017.03.027" target="_blank" rel="noopener">doi.org/10.1016/j.solener.2017.03.027</a></span></li>
+        <li id="src-13"><span class="n">13</span><span>D. L. King, W. E. Boyson and J. A. Kratochvil, "Photovoltaic Array Performance Model," SAND2004-3535, 2004. <a href="https://www.osti.gov/biblio/919131" target="_blank" rel="noopener">osti.gov/biblio/919131</a></span></li>
+        <li id="src-15"><span class="n">15</span><span>D. King et al., "Performance Model for Grid-Connected Photovoltaic Inverters," SAND2007-5036, 2007. <a href="https://doi.org/10.2172/920449" target="_blank" rel="noopener">doi.org/10.2172/920449</a></span></li>
+        <li id="src-16"><span class="n">16</span><span>A. P. Dobos, "PVWatts Version 5 Manual," NREL/TP-6A20-62641, 2014. <a href="https://doi.org/10.2172/1158421" target="_blank" rel="noopener">doi.org/10.2172/1158421</a></span></li>
+        <li id="src-17"><span class="n">17</span><span>California Energy Commission module and inverter databases, as distributed with NREL's System Advisor Model. <a href="https://github.com/NREL/SAM" target="_blank" rel="noopener">github.com/NREL/SAM</a></span></li>
+        <li id="src-21"><span class="n">21</span><span>M. Sengupta et al., "The National Solar Radiation Data Base (NSRDB)," <i>Renewable and Sustainable Energy Reviews</i> 89, 2018. Phoenix: TMY 2025; Des Moines: PSM v3 TMY from NREL SAM. <a href="https://doi.org/10.1016/j.rser.2018.03.003" target="_blank" rel="noopener">doi.org/10.1016/j.rser.2018.03.003</a></span></li>
+        <li id="src-30"><span class="n">30</span><span>Arduino, "analogRead()." <a href="https://docs.arduino.cc/language-reference/en/functions/analog-io/analogRead/" target="_blank" rel="noopener">docs.arduino.cc</a></span></li>
+        <li id="src-32"><span class="n">32</span><span>SG90 micro servo datasheet, operating speed 0.1 s per 60°. <a href="https://bit.nkust.edu.tw/~csshieh/teach/111A/mc/datasheet/SG90.pdf" target="_blank" rel="noopener">SG90.pdf</a></span></li>
+        <li id="src-35"><span class="n">35</span><span>NOAA Global Monitoring Laboratory, "Solar Calculation Details," based on J. Meeus, <i>Astronomical Algorithms</i>. <a href="https://gml.noaa.gov/grad/solcalc/calcdetails.html" target="_blank" rel="noopener">gml.noaa.gov/grad/solcalc</a></span></li>
+        <li id="src-r"><span class="n">R</span><span>My validation run: <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/web-sim/validation.json" target="_blank" rel="noopener">web-sim/validation.json</a>, produced by <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/web-sim/validate.js" target="_blank" rel="noopener">validate.js</a>, which runs this page's model against the pvlib results and NREL's Solar Position Algorithm.<sup class="cite"><a href="#src-9">9</a></sup></span></li>
+        <li id="src-a"><span class="n">A</span><span>Assumptions: the divider wall geometry, cloud and flicker statistics, and light sensor lag in the controller replay are my modeling choices, listed with reasoning in the <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/README.md" target="_blank" rel="noopener">main README</a>.</span></li>
+      </ul>
+      <p class="note">Numbers match <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/SOURCES.md" target="_blank" rel="noopener" style="color:var(--accent)">SOURCES.md</a> and the case study.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="inner">© 2026 Jay Kaluiji</div>
+</footer>
+
+<script src="weather-data.js"></script>
+<script src="solar-model.js"></script>
+<script src="controller-model.js"></script>
+<script>
+(function () {
+  "use strict";
+  var DATA = window.SOLAR_DATA, M = window.SolarModel, CM = window.ControllerModel;
+  var VALID = {
+  "sun": {
+    "Phoenix, AZ": {
+      "hours_compared": 818,
+      "max_zenith_error_deg": 0.024,
+      "max_azimuth_error_deg": 0.028
+    },
+    "Des Moines, IA": {
+      "hours_compared": 812,
+      "max_zenith_error_deg": 0.017,
+      "max_azimuth_error_deg": 0.018
+    }
+  },
+  "annual": {
+    "Phoenix, AZ": {
+      "Flat": {
+        "browser_kwh": 7424.4,
+        "pvlib_kwh": 7444.9,
+        "pvlib_pvwatts_kwh": 7373.9,
+        "diff_vs_pvlib_pct": -0.28
+      },
+      "Fixed, best tilt": {
+        "browser_kwh": 8542.6,
+        "pvlib_kwh": 8567.4,
+        "pvlib_pvwatts_kwh": 8482.8,
+        "diff_vs_pvlib_pct": -0.29
+      },
+      "Single axis": {
+        "browser_kwh": 10661.6,
+        "pvlib_kwh": 10707.1,
+        "pvlib_pvwatts_kwh": 10581.9,
+        "diff_vs_pvlib_pct": -0.43
+      },
+      "Dual axis": {
+        "browser_kwh": 11927.2,
+        "pvlib_kwh": 11961.4,
+        "pvlib_pvwatts_kwh": 11839.5,
+        "diff_vs_pvlib_pct": -0.29
+      },
+      "gains": {
+        "single_axis_vs_fixed_browser_pct": 24.8,
+        "single_axis_vs_fixed_pvlib_pct": 25,
+        "dual_axis_vs_fixed_browser_pct": 39.6,
+        "dual_axis_vs_fixed_pvlib_pct": 39.6
+      }
+    },
+    "Des Moines, IA": {
+      "Flat": {
+        "browser_kwh": 5393.5,
+        "pvlib_kwh": 5407,
+        "pvlib_pvwatts_kwh": 5378.8,
+        "diff_vs_pvlib_pct": -0.25
+      },
+      "Fixed, best tilt": {
+        "browser_kwh": 6500.9,
+        "pvlib_kwh": 6523.3,
+        "pvlib_pvwatts_kwh": 6482.8,
+        "diff_vs_pvlib_pct": -0.34
+      },
+      "Single axis": {
+        "browser_kwh": 7642.5,
+        "pvlib_kwh": 7686,
+        "pvlib_pvwatts_kwh": 7618.7,
+        "diff_vs_pvlib_pct": -0.57
+      },
+      "Dual axis": {
+        "browser_kwh": 8744.6,
+        "pvlib_kwh": 8788.9,
+        "pvlib_pvwatts_kwh": 8721.3,
+        "diff_vs_pvlib_pct": -0.5
+      },
+      "gains": {
+        "single_axis_vs_fixed_browser_pct": 17.6,
+        "single_axis_vs_fixed_pvlib_pct": 17.8,
+        "dual_axis_vs_fixed_browser_pct": 34.5,
+        "dual_axis_vs_fixed_pvlib_pct": 34.7
+      }
+    }
+  },
+  "max_abs_diff_pct": 0.57
+};
+  var css = getComputedStyle(document.documentElement);
+  function v(n) { return css.getPropertyValue(n).trim(); }
+  var SETUPS = M.SETUPS;
+  var COLOR = { "Flat": v("--c-flat"), "Fixed, best tilt": v("--c-fixed"), "Single axis": v("--c-single"), "Dual axis": v("--c-dual") };
+  var NAME = { "Flat": "Flat", "Fixed, best tilt": "Fixed tilt", "Single axis": "Single axis", "Dual axis": "Dual axis" };
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var fmt1 = function (x) { return x.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 }); };
+  var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  var state = { site: "Phoenix, AZ", day: 172, time: 12, playing: false, speed: 1.5, profile: null };
+
+  function el(t, a, x) { var e = document.createElement(t); if (a) for (var k in a) e.setAttribute(k, a[k]); if (x != null) e.textContent = x; return e; }
+  function dateLabel(day) { var d = new Date(Date.UTC(2023, 0, day)); return MONTHS[d.getUTCMonth()] + " " + d.getUTCDate(); }
+  function timeLabel(h) { var hh = Math.floor(h), mm = Math.round((h - hh) * 60); if (mm === 60) { hh++; mm = 0; } return (hh % 12 || 12) + ":" + (mm < 10 ? "0" : "") + mm + (hh < 12 || hh === 24 ? " am" : " pm"); }
+
+  /* ---------- badges ---------- */
+  (function () {
+    var b = document.getElementById("badges");
+    var s = VALID.sun["Phoenix, AZ"];
+    var items = [
+      ["Yearly energy within <b>" + VALID.max_abs_diff_pct.toFixed(1) + "%</b> of the full pvlib model", "#src-r"],
+      ["Sun position within <b>" + Math.max(s.max_zenith_error_deg, s.max_azimuth_error_deg).toFixed(2) + "°</b> of NREL's algorithm", "#src-r"],
+      ["Real hourly weather, <b>8,760 hours</b> per site", "#src-21"]
+    ];
+    items.forEach(function (it, i) {
+      var a = el("a", { "class": "badge", href: it[1] });
+      a.style.textDecoration = "none";
+      if (i < 2) a.appendChild(el("span", { "class": "dot", "aria-hidden": "true" }));
+      var t = el("span"); t.innerHTML = it[0]; a.appendChild(t);
+      b.appendChild(a);
+    });
+  })();
+
+  /* ---------- site buttons ---------- */
+  var siteSeg = document.getElementById("siteSeg");
+  Object.keys(DATA.sites).forEach(function (name) {
+    var btn = el("button", { type: "button", "aria-pressed": name === state.site ? "true" : "false" }, name);
+    btn.addEventListener("click", function () {
+      state.site = name;
+      siteSeg.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === btn ? "true" : "false"); });
+      recomputeDay(); computeYear(); render();
+    });
+    siteSeg.appendChild(btn);
+  });
+
+  /* ---------- meters ---------- */
+  var meters = document.getElementById("meters"), meterEls = {};
+  SETUPS.forEach(function (k) {
+    var row = el("div", { "class": "meter" });
+    var nm = el("span", { "class": "nm" }); var sw = el("i", { "class": "sw" }); sw.style.background = COLOR[k];
+    nm.appendChild(sw); nm.appendChild(document.createTextNode(NAME[k])); row.appendChild(nm);
+    var tr = el("div", { "class": "bar-track" }); var bar = el("div", { "class": "bar" }); bar.style.background = COLOR[k]; tr.appendChild(bar); row.appendChild(tr);
+    var kw = el("span", { "class": "kw" }, "0.00"); var kwh = el("span", { "class": "kwh" }, "0.0"); row.appendChild(kw); row.appendChild(kwh);
+    meters.appendChild(row);
+    meterEls[k] = { bar: bar, kw: kw, kwh: kwh };
+  });
+  var legend = document.getElementById("dayLegend");
+  SETUPS.forEach(function (k) { var li = el("li"); var i = el("i"); i.style.background = COLOR[k]; li.appendChild(i); li.appendChild(document.createTextNode(NAME[k])); legend.appendChild(li); });
+
+  /* ---------- physics for the chosen day ---------- */
+  var STEP_H = 1 / 12;    // 5 minutes
+  function evalAt(siteName, day, hourOfDay) {
+    var site = DATA.sites[siteName], hourOfYear = (day - 1) * 24 + hourOfDay;
+    var sun = M.sunPosition(M.utcMsFor(site, hourOfYear), site.lat, site.lon);
+    var w = M.weatherAtHour(site, hourOfYear);
+    var res = {};
+    SETUPS.forEach(function (k) {
+      var o = M.orientation(k, sun, site.best_tilt);
+      res[k] = { o: o, r: M.step(w, sun, o, day, DATA) };
+    });
+    return { sun: sun, w: w, res: res };
+  }
+  function recomputeDay() {
+    var times = [], power = {};
+    SETUPS.forEach(function (k) { power[k] = []; });
+    for (var h = 0; h <= 24 + 1e-9; h += STEP_H) {
+      var e = evalAt(state.site, state.day, h);
+      times.push(h);
+      SETUPS.forEach(function (k) { power[k].push(e.res[k].r.pac / 1000); });
+    }
+    var sunPath = [];
+    for (var h2 = 0; h2 <= 24; h2 += 0.25) {
+      var site = DATA.sites[state.site];
+      sunPath.push(M.sunPosition(M.utcMsFor(site, (state.day - 1) * 24 + h2), site.lat, site.lon));
+    }
+    state.profile = { times: times, power: power, sunPath: sunPath };
+    document.getElementById("daySub").textContent = "AC output of a 4.8 kW system on " + dateLabel(state.day) + " in " + state.site.split(",")[0] + ". Drag across the chart to read values.";
+  }
+  function energyUpTo(k, hour) {
+    var p = state.profile, sum = 0;
+    for (var i = 1; i < p.times.length && p.times[i] <= hour + 1e-9; i++) sum += (p.power[k][i - 1] + p.power[k][i]) / 2 * STEP_H;
+    return sum;
+  }
+
+  /* ---------- year table ---------- */
+  var yearCache = {};
+  function computeYear() {
+    var name = state.site;
+    if (!yearCache[name]) yearCache[name] = M.annual(DATA.sites[name], DATA);
+    var r = yearCache[name], site = DATA.sites[name];
+    var tb = document.getElementById("yearTable"); tb.textContent = "";
+    SETUPS.forEach(function (k) {
+      var js = r.totals[k], ref = site.pvlib_annual_kwh[k], d = 100 * (js / ref - 1);
+      var tr = el("tr");
+      var td0 = el("td"); var sw = el("i"); sw.style.cssText = "display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;background:" + COLOR[k];
+      td0.appendChild(sw); td0.appendChild(document.createTextNode(NAME[k])); tr.appendChild(td0);
+      tr.appendChild(el("td", null, Math.round(js).toLocaleString("en-US") + " kWh"));
+      tr.appendChild(el("td", null, Math.round(ref).toLocaleString("en-US")));
+      tr.appendChild(el("td", { "class": Math.abs(d) < 1 ? "good" : "" }, (d >= 0 ? "+" : "") + d.toFixed(1) + "%"));
+      tb.appendChild(tr);
+    });
+    var f = r.totals["Fixed, best tilt"];
+    document.getElementById("yearNote").innerHTML = "Tracking gain over fixed tilt here: single axis +" + (100 * (r.totals["Single axis"] / f - 1)).toFixed(1) +
+      "%, dual axis +" + (100 * (r.totals["Dual axis"] / f - 1)).toFixed(1) + "%. Fixed panels face south at " + site.best_tilt + "°, the best tilt found by the full model.<sup class=\"cite\"><a href=\"#src-r\">R</a></sup>";
+  }
+  document.getElementById("howCheck").innerHTML = "I checked it against the full pvlib model over a whole year: annual energy agrees within " +
+    VALID.max_abs_diff_pct.toFixed(2) + "% for every site and panel setup, and the sun's position agrees with NREL's Solar Position Algorithm<sup class=\"cite\"><a href=\"#src-9\">9</a></sup> to within " +
+    Math.max(VALID.sun["Phoenix, AZ"].max_zenith_error_deg, VALID.sun["Phoenix, AZ"].max_azimuth_error_deg, VALID.sun["Des Moines, IA"].max_zenith_error_deg, VALID.sun["Des Moines, IA"].max_azimuth_error_deg).toFixed(2) +
+    "° at every daylight hour compared.<sup class=\"cite\"><a href=\"#src-r\">R</a></sup>";
+
+  /* ---------- canvas helpers ---------- */
+  function fitCanvas(c) {
+    var r = c.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    var ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx: ctx, w: r.width, h: r.height };
+  }
+
+  /* ---------- 3D scene ---------- */
+  var scene = document.getElementById("scene");
+  // world: x = east, y = north, z = up. Camera looks north from the south, raised and turned slightly.
+  var CAM = { yaw: -14 * Math.PI / 180, pitch: 20 * Math.PI / 180 };
+  function project(p, S) {
+    var cy = Math.cos(CAM.yaw), sy = Math.sin(CAM.yaw);
+    var x = p[0] * cy - p[1] * sy, y = p[0] * sy + p[1] * cy, z = p[2];
+    var cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
+    var depth = y * cp - z * sp, up = z * cp + y * sp;
+    var persp = 1 / (1 + depth * 0.035);
+    return { x: S.cx + x * S.k * persp, y: S.cy - up * S.k * persp, d: depth };
+  }
+  function normalOf(tilt, az) {
+    var t = tilt * Math.PI / 180, a = az * Math.PI / 180;
+    return [Math.sin(t) * Math.sin(a), Math.sin(t) * Math.cos(a), Math.cos(t)];
+  }
+  function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+  function norm(a) { var l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }
+  function mix(c1, c2, t) {
+    var a = parseInt(c1.slice(1), 16), b = parseInt(c2.slice(1), 16);
+    var r = Math.round(((a >> 16) & 255) * (1 - t) + ((b >> 16) & 255) * t), g = Math.round(((a >> 8) & 255) * (1 - t) + ((b >> 8) & 255) * t), bl = Math.round((a & 255) * (1 - t) + (b & 255) * t);
+    return "rgb(" + r + "," + g + "," + bl + ")";
+  }
+
+  function drawScene(e) {
+    var F = fitCanvas(scene), ctx = F.ctx, W = F.w, H = F.h;
+    var S = { cx: W / 2, cy: H * 0.72, k: Math.min(W / 17, H / 11.5) };
+    var el_ = 90 - e.sun.zenith, day = el_ > 0;
+    // sky
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    var cloudy = e.w.ghi > 0 ? Math.min(1, e.w.dhi / Math.max(e.w.ghi, 1)) : 0;
+    var top = day ? mix(v("--sky-top"), "#C9D3DD", cloudy * 0.6) : "#C9CED6";
+    g.addColorStop(0, top); g.addColorStop(1, day ? v("--sky-low") : "#E3E1DC");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+    // ground plane
+    var R = 7.2;
+    ctx.beginPath();
+    for (var a = 0; a <= 64; a++) {
+      var th = a / 64 * Math.PI * 2, p = project([R * Math.cos(th), R * Math.sin(th) * 0.85, 0], S);
+      if (a === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+    }
+    ctx.closePath(); ctx.fillStyle = v("--ground"); ctx.fill();
+    // compass marks
+    ctx.fillStyle = v("--muted"); ctx.font = "600 11px " + v("--font-body"); ctx.textAlign = "center";
+    [["N", 0, R * 0.85], ["S", 0, -R * 0.85], ["E", R, 0], ["W", -R, 0]].forEach(function (m) {
+      var p = project([m[1], m[2], 0], S); ctx.fillText(m[0], p.x, p.y + 4);
+    });
+
+    // sun path for the day and the sun
+    var SR = 8.6;
+    ctx.setLineDash([3, 4]); ctx.strokeStyle = "rgba(70,96,127,.45)"; ctx.lineWidth = 1.2; ctx.beginPath();
+    var started = false;
+    state.profile.sunPath.forEach(function (s) {
+      if (s.zenith > 92) { started = false; return; }
+      var d = norm([Math.sin(s.zenith * Math.PI / 180) * Math.sin(s.azimuth * Math.PI / 180), Math.sin(s.zenith * Math.PI / 180) * Math.cos(s.azimuth * Math.PI / 180), Math.cos(s.zenith * Math.PI / 180)]);
+      var p = project([d[0] * SR, d[1] * SR * 0.85, Math.max(-0.2, d[2] * SR)], S);
+      if (!started) { ctx.moveTo(p.x, p.y); started = true; } else ctx.lineTo(p.x, p.y);
+    });
+    ctx.stroke(); ctx.setLineDash([]);
+    var zr = e.sun.zenith * Math.PI / 180, ar = e.sun.azimuth * Math.PI / 180;
+    var sd = [Math.sin(zr) * Math.sin(ar), Math.sin(zr) * Math.cos(ar), Math.cos(zr)];
+    if (day) {
+      var sp = project([sd[0] * SR, sd[1] * SR * 0.85, sd[2] * SR], S);
+      var glow = ctx.createRadialGradient(sp.x, sp.y, 2, sp.x, sp.y, 34);
+      glow.addColorStop(0, "rgba(255,206,84,.85)"); glow.addColorStop(1, "rgba(255,206,84,0)");
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(sp.x, sp.y, 34, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#FFC23D"; ctx.beginPath(); ctx.arc(sp.x, sp.y, 11, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // panels: four mounts in a row, west to east
+    var xs = [-4.8, -1.6, 1.6, 4.8], items = [];
+    SETUPS.forEach(function (k, i) {
+      var o = e.res[k].o, n = normalOf(o.tilt, o.azimuth);
+      var ref = Math.abs(n[2]) > 0.98 ? [0, 1, 0] : [0, 0, 1];
+      var u = norm(cross(ref, n)), w2 = norm(cross(n, u));
+      if (k === "Single axis") { w2 = [0, 1, 0]; u = norm(cross(w2, n)); }      // long side along the N-S axis
+      var c = [xs[i], 0.6, k === "Flat" ? 0.25 : 1.15];
+      var hw = 1.25, hh = 0.8;
+      var corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(function (q) {
+        return [c[0] + u[0] * hw * q[0] + w2[0] * hh * q[1], c[1] + u[1] * hw * q[0] + w2[1] * hh * q[1], c[2] + u[2] * hw * q[0] + w2[2] * hh * q[1]];
+      });
+      items.push({ k: k, c: c, n: n, corners: corners, r: e.res[k].r, depth: project(c, S).d });
+    });
+    items.sort(function (a, b) { return b.depth - a.depth; });
+    // camera direction (toward the viewer) for back-face shading
+    var camDir = [Math.sin(-CAM.yaw) * -1, -Math.cos(CAM.yaw), Math.tan(CAM.pitch)];
+    items.forEach(function (it) {
+      var base = project([it.c[0], it.c[1], 0], S), top = project(it.c, S);
+      // post
+      ctx.strokeStyle = "#8A8F96"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(base.x, base.y); ctx.lineTo(top.x, top.y); ctx.stroke();
+      // shadow under the panel (simple: offset by sun direction)
+      if (day && sd[2] > 0.05) {
+        ctx.fillStyle = "rgba(60,55,45,.13)"; ctx.beginPath();
+        it.corners.forEach(function (q, j) {
+          var t = q[2] / sd[2], g2 = project([q[0] - sd[0] * t, q[1] - sd[1] * t * 0.85, 0], S);
+          if (j === 0) ctx.moveTo(g2.x, g2.y); else ctx.lineTo(g2.x, g2.y);
+        });
+        ctx.closePath(); ctx.fill();
+      }
+      var pts = it.corners.map(function (q) { return project(q, S); });
+      var facing = it.n[0] * camDir[0] + it.n[1] * camDir[1] + it.n[2] * camDir[2] > 0;
+      var lit = Math.min(1, it.r.effective / 1000);
+      ctx.beginPath(); pts.forEach(function (p, j) { if (j === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); }); ctx.closePath();
+      ctx.fillStyle = facing ? mix("#1C2940", "#4C7FBF", lit) : "#B9B4AA";
+      ctx.fill();
+      ctx.lineWidth = 2.5; ctx.strokeStyle = COLOR[it.k]; ctx.stroke();
+      if (facing) {   // cell grid lines
+        ctx.strokeStyle = "rgba(255,255,255,.14)"; ctx.lineWidth = 1;
+        for (var gi = 1; gi < 4; gi++) {
+          var t2 = gi / 4;
+          var a1 = { x: pts[0].x + (pts[1].x - pts[0].x) * t2, y: pts[0].y + (pts[1].y - pts[0].y) * t2 }, b1 = { x: pts[3].x + (pts[2].x - pts[3].x) * t2, y: pts[3].y + (pts[2].y - pts[3].y) * t2 };
+          ctx.beginPath(); ctx.moveTo(a1.x, a1.y); ctx.lineTo(b1.x, b1.y); ctx.stroke();
+        }
+      }
+      // label
+      ctx.fillStyle = v("--fg"); ctx.font = "600 12px " + v("--font-body"); ctx.textAlign = "center";
+      var lab = project([it.c[0], -2.2, 0], S);
+      ctx.fillText(NAME[it.k], lab.x, lab.y + 14);
+      ctx.fillStyle = v("--muted"); ctx.font = "12px " + v("--font-body");
+      ctx.fillText((it.r.pac / 1000).toFixed(2) + " kW", lab.x, lab.y + 30);
+    });
+
+    // corner readout
+    ctx.textAlign = "right"; ctx.fillStyle = v("--fg"); ctx.font = "600 13px " + v("--font-body");
+    ctx.fillText(dateLabel(state.day) + ", " + timeLabel(state.time), W - 14, 24);
+    ctx.fillStyle = v("--muted"); ctx.font = "12px " + v("--font-body");
+    ctx.fillText(day ? "Sun " + el_.toFixed(1) + "° high, azimuth " + e.sun.azimuth.toFixed(0) + "°" : "Sun below the horizon", W - 14, 42);
+  }
+
+  /* ---------- day chart ---------- */
+  var dayChart = document.getElementById("dayChart"), dayTip = document.getElementById("dayTip"), hoverHour = null;
+  var X0 = 4, X1 = 20.5;
+  function drawDay() {
+    var F = fitCanvas(dayChart), ctx = F.ctx, W = F.w, H = F.h;
+    var L = 38, Rr = 10, T = 8, B = 24, pw = W - L - Rr, ph = H - T - B, ymax = 4;
+    function X(h) { return L + (h - X0) / (X1 - X0) * pw; }
+    function Y(p) { return T + ph - p / ymax * ph; }
+    ctx.clearRect(0, 0, W, H);
+    ctx.font = "11px " + v("--font-body"); ctx.fillStyle = v("--muted"); ctx.strokeStyle = v("--rule"); ctx.lineWidth = 1;
+    for (var y = 0; y <= 4; y++) { ctx.beginPath(); ctx.moveTo(L, Y(y)); ctx.lineTo(W - Rr, Y(y)); ctx.stroke(); ctx.textAlign = "right"; ctx.fillText(y + " kW", L - 6, Y(y) + 4); }
+    ctx.textAlign = "center";
+    for (var h = 6; h <= 20; h += (W < 500 ? 4 : 2)) ctx.fillText(timeLabel(h).replace(":00", ""), X(h), H - 6);
+    // inverter limit
+    ctx.setLineDash([4, 3]); ctx.strokeStyle = v("--muted"); ctx.beginPath(); ctx.moveTo(L, Y(3.85)); ctx.lineTo(W - Rr, Y(3.85)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.textAlign = "left"; ctx.fillText("inverter limit 3.85 kW", L + 4, Y(3.85) - 5);
+    var p = state.profile;
+    SETUPS.forEach(function (k) {
+      ctx.strokeStyle = COLOR[k]; ctx.lineWidth = 2; ctx.beginPath();
+      var first = true;
+      for (var i = 0; i < p.times.length; i++) {
+        var t = p.times[i]; if (t < X0 || t > X1) continue;
+        var px = X(t), py = Y(p.power[k][i]);
+        if (first) { ctx.moveTo(px, py); first = false; } else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    });
+    // current time cursor
+    var cx = X(Math.max(X0, Math.min(X1, state.time)));
+    ctx.strokeStyle = v("--fg"); ctx.globalAlpha = .35; ctx.beginPath(); ctx.moveTo(cx, T); ctx.lineTo(cx, T + ph); ctx.stroke(); ctx.globalAlpha = 1;
+    if (hoverHour != null) {
+      var hx = X(hoverHour); ctx.strokeStyle = v("--accent"); ctx.beginPath(); ctx.moveTo(hx, T); ctx.lineTo(hx, T + ph); ctx.stroke();
+      var idx = Math.round(hoverHour / STEP_H);
+      SETUPS.forEach(function (k) {
+        var pv = p.power[k][idx]; ctx.fillStyle = COLOR[k]; ctx.beginPath(); ctx.arc(hx, Y(pv), 4, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = v("--card"); ctx.lineWidth = 1.5; ctx.stroke();
+      });
+    }
+    drawDay.X = X; drawDay.L = L; drawDay.pw = pw;
+  }
+  function dayHover(ev) {
+    var r = dayChart.getBoundingClientRect(), x = ev.clientX - r.left;
+    var h = X0 + (x - drawDay.L) / drawDay.pw * (X1 - X0);
+    if (h < X0 || h > X1) { hoverHour = null; dayTip.style.display = "none"; drawDay(); return; }
+    hoverHour = Math.round(h / STEP_H) * STEP_H;
+    var idx = Math.round(hoverHour / STEP_H), p = state.profile;
+    dayTip.textContent = "";
+    dayTip.appendChild(el("b", null, timeLabel(hoverHour)));
+    SETUPS.forEach(function (k) {
+      var d = el("div"); var i = el("i"); i.style.background = COLOR[k]; d.appendChild(i);
+      d.appendChild(document.createTextNode(NAME[k] + ": " + p.power[k][idx].toFixed(2) + " kW")); dayTip.appendChild(d);
+    });
+    dayTip.style.display = "block";
+    var tx = drawDay.X(hoverHour) + 12; if (tx + 170 > r.width) tx = drawDay.X(hoverHour) - 182;
+    dayTip.style.left = tx + "px"; dayTip.style.top = "6px";
+    drawDay();
+  }
+  dayChart.addEventListener("pointermove", dayHover);
+  dayChart.addEventListener("pointerdown", function (ev) { dayHover(ev); if (hoverHour != null) { state.time = hoverHour; syncTime(); render(); } });
+  dayChart.addEventListener("pointerleave", function () { hoverHour = null; dayTip.style.display = "none"; drawDay(); });
+
+  /* ---------- render ---------- */
+  function render() {
+    var e = evalAt(state.site, state.day, state.time);
+    drawScene(e);
+    drawDay();
+    document.getElementById("wDni").textContent = Math.round(e.w.dni) + " W/m²";
+    document.getElementById("wDhi").textContent = Math.round(e.w.dhi) + " W/m²";
+    document.getElementById("wTemp").textContent = e.w.temp.toFixed(1) + " °C";
+    SETUPS.forEach(function (k) {
+      var kw = e.res[k].r.pac / 1000, m = meterEls[k];
+      m.bar.style.width = Math.min(100, kw / 3.85 * 100) + "%";
+      m.kw.textContent = kw.toFixed(2);
+      m.kwh.textContent = fmt1(energyUpTo(k, state.time));
+    });
+  }
+
+  /* ---------- controls ---------- */
+  var dayIn = document.getElementById("day"), timeIn = document.getElementById("time");
+  function syncDay() { document.getElementById("dayOut").textContent = dateLabel(state.day); dayIn.value = state.day; }
+  function syncTime() { document.getElementById("timeOut").textContent = timeLabel(state.time); timeIn.value = state.time; }
+  dayIn.addEventListener("input", function () { state.day = +dayIn.value; syncDay(); recomputeDay(); render(); });
+  timeIn.addEventListener("input", function () { state.time = +timeIn.value; syncTime(); render(); });
+  var playBtn = document.getElementById("play"), last = 0;
+  function frame(ts) {
+    if (!state.playing) return;
+    var dt = last ? Math.min(0.1, (ts - last) / 1000) : 0; last = ts;
+    state.time += dt * state.speed;
+    if (state.time >= 20.5) { state.time = 20.5; setPlaying(false); }
+    syncTime(); render();
+    if (state.playing) requestAnimationFrame(frame);
+  }
+  function setPlaying(on) {
+    state.playing = on; playBtn.textContent = on ? "Pause" : "Play the day";
+    if (on) { if (state.time >= 20.4) state.time = 4.5; last = 0; requestAnimationFrame(frame); }
+  }
+  playBtn.addEventListener("click", function () { setPlaying(!state.playing); });
+  document.querySelectorAll("#speedSeg button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      state.speed = +b.getAttribute("data-speed");
+      document.querySelectorAll("#speedSeg button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+    });
+  });
+
+  /* ---------- controller replay ---------- */
+  var cScene = document.getElementById("ctrlScene"), strip = document.getElementById("strip");
+  var ctrl = { mode: "raw", cloud: 30, flicker: 10, running: !reduced, s: null, hist: [], last: 0 };
+  function resetCtrl() {
+    ctrl.s = CM.create({ mode: ctrl.mode, cloud: ctrl.cloud, flicker: ctrl.flicker, lux: 400 });
+    ctrl.hist = [];
+  }
+  function drawCtrl() {
+    var s = ctrl.s, F = fitCanvas(cScene), ctx = F.ctx, W = F.w, H = F.h;
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    var sky = s.sky == null ? 1 : s.sky;
+    g.addColorStop(0, mix("#C7CDD4", v("--sky-top"), sky)); g.addColorStop(1, v("--sky-low"));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    var gx = W / 2, gy = H * 0.86, Rs = Math.min(W * 0.42, gy - 30 - 48);
+    ctx.fillStyle = v("--ground"); ctx.fillRect(0, gy, W, H - gy);
+    // arc of the sweep
+    ctx.setLineDash([3, 4]); ctx.strokeStyle = "rgba(70,96,127,.4)"; ctx.beginPath();
+    for (var a = -40; a <= 40; a += 2) { var r = a * Math.PI / 180, px = gx + Rs * Math.sin(r), py = gy - 30 - Rs * Math.cos(r); if (a === -40) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+    ctx.stroke(); ctx.setLineDash([]);
+    var sr = s.sun * Math.PI / 180, sx = gx + Rs * Math.sin(sr), sy = gy - 30 - Rs * Math.cos(sr);
+    var glow = ctx.createRadialGradient(sx, sy, 2, sx, sy, 30); glow.addColorStop(0, "rgba(255,206,84,.85)"); glow.addColorStop(1, "rgba(255,206,84,0)");
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(sx, sy, 30, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#FFC23D"; ctx.beginPath(); ctx.arc(sx, sy, 10, 0, Math.PI * 2); ctx.fill();
+    // clouds overlay
+    if (sky < 0.97) { ctx.fillStyle = "rgba(160,168,178," + ((1 - sky) * 0.55).toFixed(3) + ")"; ctx.fillRect(0, 0, W, gy); }
+    // post and panel
+    var px0 = gx, py0 = gy - 30;
+    ctx.strokeStyle = "#8A8F96"; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(px0, gy); ctx.lineTo(px0, py0); ctx.stroke();
+    var pr = s.panel * Math.PI / 180, half = Math.min(W, H) * 0.2;
+    var ex = Math.cos(pr), ey = Math.sin(pr);          // along the panel, east end
+    ctx.save(); ctx.translate(px0, py0); ctx.rotate(pr);
+    ctx.fillStyle = "#1F2F4A"; ctx.fillRect(-half, -6, half * 2, 10);
+    ctx.fillStyle = "#2a78d6"; ctx.fillRect(-half, -8, half * 2, 3);
+    // divider wall and the two sensors
+    ctx.fillStyle = "#4b5563"; ctx.fillRect(-2, -26, 4, 20);
+    var gE = Math.min(1, s.luxE / 450), gW = Math.min(1, s.luxW / 450);
+    ctx.fillStyle = mix("#3a3a2a", "#FFD34D", gE); ctx.beginPath(); ctx.arc(9, -12, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = mix("#3a3a2a", "#FFD34D", gW); ctx.beginPath(); ctx.arc(-9, -12, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // facing direction
+    ctx.strokeStyle = "rgba(36,39,43,.35)"; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(px0, py0); ctx.lineTo(px0 + Math.sin(pr) * Rs * 0.55, py0 - Math.cos(pr) * Rs * 0.55); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = v("--muted"); ctx.font = "12px " + v("--font-body"); ctx.textAlign = "left";
+    ctx.fillText("West", 12, gy + 18); ctx.textAlign = "right"; ctx.fillText("East", W - 12, gy + 18);
+    ctx.textAlign = "left"; ctx.fillStyle = v("--fg"); ctx.font = "600 12px " + v("--font-body");
+    ctx.fillText("Sensors: east " + s.east + ", west " + s.west + " (ADC counts)", 12, 22);
+  }
+  function drawStrip() {
+    var F = fitCanvas(strip), ctx = F.ctx, W = F.w, H = F.h, h = ctrl.hist;
+    ctx.clearRect(0, 0, W, H);
+    if (!h.length) return;
+    var t1 = h[h.length - 1].t, t0 = t1 - 20, lo = -45, hi = 45;
+    function X(t) { return 34 + (t - t0) / 20 * (W - 40); }
+    function Y(a) { return 6 + (hi - a) / (hi - lo) * (H - 22); }
+    ctx.strokeStyle = v("--rule"); ctx.fillStyle = v("--muted"); ctx.font = "10px " + v("--font-body"); ctx.textAlign = "right";
+    [-40, 0, 40].forEach(function (a) { ctx.beginPath(); ctx.moveTo(34, Y(a)); ctx.lineTo(W - 6, Y(a)); ctx.stroke(); ctx.fillText(a + "°", 30, Y(a) + 3); });
+    ctx.setLineDash([4, 3]); ctx.strokeStyle = "#B08900"; ctx.lineWidth = 1.5; ctx.beginPath();
+    h.forEach(function (p, i) { if (i === 0) ctx.moveTo(X(p.t), Y(p.sun)); else ctx.lineTo(X(p.t), Y(p.sun)); }); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = v("--accent"); ctx.lineWidth = 2; ctx.beginPath();
+    h.forEach(function (p, i) { if (i === 0) ctx.moveTo(X(p.t), Y(p.panel)); else ctx.lineTo(X(p.t), Y(p.panel)); }); ctx.stroke();
+  }
+  function updateStats() {
+    var s = ctrl.s;
+    document.getElementById("revOut").textContent = s.reversals;
+    document.getElementById("movesOut").textContent = s.moves;
+    document.getElementById("errOut").textContent = s.errN ? (s.errSum / s.errN).toFixed(1) + "°" : "–";
+    document.getElementById("stRev").classList.toggle("alert", s.reversals > 20);
+  }
+  function ctrlFrame(ts) {
+    if (!ctrl.running) return;
+    var dt = ctrl.last ? Math.min(0.05, (ts - ctrl.last) / 1000) : 0.016; ctrl.last = ts;
+    var ticks = Math.round(dt * 1000);
+    for (var i = 0; i < ticks; i++) {
+      CM.tick(ctrl.s);
+      if (i % 20 === 0) { ctrl.hist.push({ t: ctrl.s.t, sun: ctrl.s.sun, panel: ctrl.s.panel }); }
+    }
+    while (ctrl.hist.length && ctrl.hist[0].t < ctrl.s.t - 20) ctrl.hist.shift();
+    if (ctrl.s.t >= CM.C.SWEEP_S + 2) resetCtrl();
+    drawCtrl(); drawStrip(); updateStats();
+    requestAnimationFrame(ctrlFrame);
+  }
+  var ctrlPlay = document.getElementById("ctrlPlay");
+  function setCtrlRunning(on) { ctrl.running = on; ctrlPlay.textContent = on ? "Pause" : "Play"; if (on) { ctrl.last = 0; requestAnimationFrame(ctrlFrame); } }
+  ctrlPlay.addEventListener("click", function () { setCtrlRunning(!ctrl.running); });
+  document.getElementById("ctrlReset").addEventListener("click", function () { resetCtrl(); drawCtrl(); drawStrip(); updateStats(); });
+  document.querySelectorAll("#modeSeg button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      ctrl.mode = b.getAttribute("data-mode");
+      document.querySelectorAll("#modeSeg button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      resetCtrl(); drawCtrl(); drawStrip(); updateStats();
+    });
+  });
+  [["cloud", "cloudOut"], ["flicker", "flickerOut"]].forEach(function (p) {
+    var inp = document.getElementById(p[0]);
+    inp.addEventListener("input", function () {
+      ctrl[p[0]] = +inp.value; ctrl.s[p[0]] = +inp.value; document.getElementById(p[1]).textContent = inp.value + "%";
+    });
+  });
+
+  /* ---------- start ---------- */
+  syncDay(); syncTime();
+  recomputeDay(); computeYear(); render();
+  resetCtrl();
+  // warm the controller up so the first frame already shows a moving panel
+  for (var i = 0; i < 15000; i++) { CM.tick(ctrl.s); if (i % 20 === 0) ctrl.hist.push({ t: ctrl.s.t, sun: ctrl.s.sun, panel: ctrl.s.panel }); }
+  drawCtrl(); drawStrip(); updateStats();
+  if (ctrl.running) setCtrlRunning(true);
+  var rz = 0;
+  window.addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(function () { render(); drawCtrl(); drawStrip(); }, 120); });
+})();
+</script>
+</body>
+</html>

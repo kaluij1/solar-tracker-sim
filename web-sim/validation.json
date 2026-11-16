@@ -1,0 +1,81 @@
+{
+  "sun": {
+    "Phoenix, AZ": {
+      "hours_compared": 818,
+      "max_zenith_error_deg": 0.024,
+      "max_azimuth_error_deg": 0.028
+    },
+    "Des Moines, IA": {
+      "hours_compared": 812,
+      "max_zenith_error_deg": 0.017,
+      "max_azimuth_error_deg": 0.018
+    }
+  },
+  "annual": {
+    "Phoenix, AZ": {
+      "Flat": {
+        "browser_kwh": 7424.4,
+        "pvlib_kwh": 7444.9,
+        "pvlib_pvwatts_kwh": 7373.9,
+        "diff_vs_pvlib_pct": -0.28
+      },
+      "Fixed, best tilt": {
+        "browser_kwh": 8542.6,
+        "pvlib_kwh": 8567.4,
+        "pvlib_pvwatts_kwh": 8482.8,
+        "diff_vs_pvlib_pct": -0.29
+      },
+      "Single axis": {
+        "browser_kwh": 10661.6,
+        "pvlib_kwh": 10707.1,
+        "pvlib_pvwatts_kwh": 10581.9,
+        "diff_vs_pvlib_pct": -0.43
+      },
+      "Dual axis": {
+        "browser_kwh": 11927.2,
+        "pvlib_kwh": 11961.4,
+        "pvlib_pvwatts_kwh": 11839.5,
+        "diff_vs_pvlib_pct": -0.29
+      },
+      "gains": {
+        "single_axis_vs_fixed_browser_pct": 24.8,
+        "single_axis_vs_fixed_pvlib_pct": 25,
+        "dual_axis_vs_fixed_browser_pct": 39.6,
+        "dual_axis_vs_fixed_pvlib_pct": 39.6
+      }
+    },
+    "Des Moines, IA": {
+      "Flat": {
+        "browser_kwh": 5393.5,
+        "pvlib_kwh": 5407,
+        "pvlib_pvwatts_kwh": 5378.8,
+        "diff_vs_pvlib_pct": -0.25
+      },
+      "Fixed, best tilt": {
+        "browser_kwh": 6500.9,
+        "pvlib_kwh": 6523.3,
+        "pvlib_pvwatts_kwh": 6482.8,
+        "diff_vs_pvlib_pct": -0.34
+      },
+      "Single axis": {
+        "browser_kwh": 7642.5,
+        "pvlib_kwh": 7686,
+        "pvlib_pvwatts_kwh": 7618.7,
+        "diff_vs_pvlib_pct": -0.57
+      },
+      "Dual axis": {
+        "browser_kwh": 8744.6,
+        "pvlib_kwh": 8788.9,
+        "pvlib_pvwatts_kwh": 8721.3,
+        "diff_vs_pvlib_pct": -0.5
+      },
+      "gains": {
+        "single_axis_vs_fixed_browser_pct": 17.6,
+        "single_axis_vs_fixed_pvlib_pct": 17.8,
+        "dual_axis_vs_fixed_browser_pct": 34.5,
+        "dual_axis_vs_fixed_pvlib_pct": 34.7
+      }
+    }
+  },
+  "max_abs_diff_pct": 0.57
+}

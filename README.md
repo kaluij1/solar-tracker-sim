@@ -18,6 +18,11 @@ The field logs from that project were lost, so this repository rebuilds it in tw
 > the file that holds it), or an assumption (labeled as one, with the reasoning). The
 > full reference list is in [`SOURCES.md`](SOURCES.md).
 
+**Try it in a browser:** [`web-sim/`](web-sim/) is an interactive version of both parts.
+Open `web-sim/solar-sim.html` to watch four panel setups follow the sun on any day, and to
+replay the twitching controller with adjustable clouds and flicker. Its physics agrees
+with the pvlib model within 0.57% over a full year (see [`web-sim/README.md`](web-sim/README.md)).
+
 ## The answer
 
 | | Phoenix, AZ | Des Moines, IA |
@@ -204,6 +209,8 @@ cd single-axis/tests && make test
 cd dual-axis/tests && make test
 cd energy-yield && pip install -r requirements.txt && python run_energy.py && python economics.py && python controller_energy.py && python make_figures.py
 ```
+
+For the browser simulator's check against pvlib: `cd web-sim && node validate.js` (Node 18+).
 
 Requires gcc or clang. `common/wokwi-api.h` is from [wokwi/inverter-chip](https://github.com/wokwi/inverter-chip) (MIT License, © 2022 Uri Shaked).
 
