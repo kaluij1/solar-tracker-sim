@@ -94,7 +94,7 @@
   .tip i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
   .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0 0 8px; padding: 0; list-style: none; font-size: .82rem; color: var(--muted); }
   .legend li { display: inline-flex; align-items: center; gap: 6px; }
-  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
 
   table { border-collapse: collapse; width: 100%; font-size: .86rem; font-variant-numeric: tabular-nums; }
   th, td { text-align: right; padding: 7px 6px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
@@ -119,6 +119,18 @@
   .strip { position: relative; height: 150px; }
   .strip canvas { width: 100%; height: 100%; display: block; }
 
+  .verdict { padding: 14px 16px; border-radius: 8px; border: 1px solid var(--rule); background: var(--bg); }
+  .verdict b { display: block; font-family: var(--font-display); font-weight: 500; font-size: 1.45rem; line-height: 1.15; }
+  .verdict span { display: block; margin-top: 4px; font-size: .86rem; color: var(--muted); }
+  .verdict.yes b { color: #1F6142; }
+  .verdict.no b { color: #B4471F; }
+  .stats.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sliders { display: grid; gap: 12px; }
+  #rowScene { display: block; width: 100%; height: 100%; min-height: 300px; aspect-ratio: 16 / 8; }
+  .stats.tight .stat b { font-size: 1.3rem; white-space: nowrap; }
+  .chart.tall { height: 260px; }
+  td.best { font-weight: 600; }
+
   .cite { font-size: .68em; line-height: 0; margin-left: 1px; }
   .cite a { color: var(--accent); text-decoration: none; padding: 0 1px; }
   .cite a:hover { text-decoration: underline; }
@@ -139,6 +151,7 @@
     .stat b { font-size: 1.25rem; }
     #scene { min-height: 320px; }
     #ctrlScene { aspect-ratio: 4 / 3; }
+    #rowScene { aspect-ratio: 4 / 3; }
     .scene-cap { display: none; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -235,6 +248,106 @@
     </div>
   </section>
 
+  <section class="section-sim" aria-labelledby="rows-title">
+    <div class="inner">
+      <p class="step">On a solar farm</p>
+      <h2 id="rows-title">Rows of trackers shade each other, so they deliberately point away from the sun</h2>
+      <div class="prose">
+        <p>Everything above is one tracker standing alone. A solar farm packs trackers in rows, and when the sun is low each row's shadow lands on the next. Farms handle this with backtracking: the rows turn back toward flat just enough that no shadow reaches the neighbor, giving up some direct sunlight to stay out of the shade.<sup class="cite"><a href="#src-7">7</a></sup> Move the time to early morning and switch between the two strategies.</p>
+      </div>
+      <div class="ctrl-grid">
+        <div class="card-box" style="overflow:hidden">
+          <canvas id="rowScene" role="img" aria-label="Side view of four tracker rows, their rotation and the shadows between them"></canvas>
+        </div>
+        <div class="card-box panel-side">
+          <div>
+            <span class="ctl-label" id="lbl-strat">Tracking strategy</span>
+            <div class="seg" role="group" aria-labelledby="lbl-strat" id="stratSeg">
+              <button type="button" data-strat="true" aria-pressed="false">Point at the sun</button>
+              <button type="button" data-strat="backtrack" aria-pressed="true">Backtrack</button>
+            </div>
+          </div>
+          <div>
+            <div class="row"><label class="ctl-label" for="gcr" style="margin:0">Ground covered by panels</label><output id="gcrOut">35%</output></div>
+            <input type="range" id="gcr" min="0.20" max="0.60" step="0.05" value="0.35">
+          </div>
+          <div>
+            <div class="row"><label class="ctl-label" for="time2" style="margin:0">Time</label><output id="time2Out"></output></div>
+            <input type="range" id="time2" min="4" max="20.5" step="0.05" value="7">
+          </div>
+          <div class="stats tight">
+            <div class="stat"><span>Tracker angle</span><b id="rowAngle">–</b></div>
+            <div class="stat" id="stShade"><span>Row in shade</span><b id="rowShade">–</b></div>
+            <div class="stat"><span>Power now</span><b id="rowPower">–</b></div>
+          </div>
+          <p class="note" id="rowNote"></p>
+        </div>
+      </div>
+      <div class="card-box box-pad" style="margin-top:18px">
+        <p class="box-title">A full year in rows</p>
+        <p class="box-sub" id="rowsSub"></p>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Single axis tracker</th><th>This page</th><th>pvlib</th><th>vs standing alone</th><th>Gain over fixed tilt</th></tr></thead>
+            <tbody id="rowsTable"></tbody>
+          </table>
+        </div>
+        <p class="note">Two ways of counting the shade loss when rows point at the sun: in proportion to the shaded area (the optimistic limit), or with a whole bypass block switching off once any of it is shaded.<sup class="cite"><a href="#src-37">37</a></sup> The second assumes modules mounted in portrait with three blocks, so the shadow crosses all of them.<sup class="cite"><a href="#src-a">A</a></sup> Only the direct beam is shaded in this model, and the fixed tilt baseline is unshaded.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-sim" aria-labelledby="econ-title">
+    <div class="inner">
+      <p class="step">Does it pay?</p>
+      <h2 id="econ-title">How much extra can a tracker cost and still pay for itself?</h2>
+      <div class="prose">
+        <p>The extra energy is worth money every year. Add up 25 years of it, discounted, and you get the most a tracker could cost over a fixed rack and still break even. The starting values are real market numbers for a home<sup class="cite"><a href="#src-2">2</a>,<a href="#src-3">3</a>,<a href="#src-4">4</a></sup> and for a solar farm;<sup class="cite"><a href="#src-1">1</a>,<a href="#src-2">2</a></sup> the maintenance, discount rate and lifetime are my assumptions.<sup class="cite"><a href="#src-a">A</a></sup> Change any of them.</p>
+      </div>
+      <div class="ctrl-grid">
+        <div class="card-box box-pad">
+          <p class="box-title">Break-even extra cost vs the price of electricity</p>
+          <p class="box-sub" id="econSub"></p>
+          <ul class="legend">
+            <li><i id="econLineKey" style="height:3px;border-radius:2px;width:16px"></i>Break-even cost: a tracker pays off below this line</li>
+            <li><i style="background:rgba(70,96,127,.22)"></i><span id="econBandKey"></span></li>
+            <li><i id="econDotKey" style="border-radius:50%"></i>Your inputs</li>
+          </ul>
+          <div class="chart tall" id="econWrap"><canvas id="econChart" aria-label="Break-even tracker cost against electricity price"></canvas><div class="tip" id="econTip"></div></div>
+        </div>
+        <div class="card-box panel-side">
+          <div>
+            <span class="ctl-label" id="lbl-mkt">Where</span>
+            <div class="seg" role="group" aria-labelledby="lbl-mkt" id="mktSeg">
+              <button type="button" data-mkt="home" aria-pressed="true">Home</button>
+              <button type="button" data-mkt="farm" aria-pressed="false">Solar farm</button>
+            </div>
+          </div>
+          <div>
+            <span class="ctl-label" id="lbl-eset">Tracker</span>
+            <div class="seg" role="group" aria-labelledby="lbl-eset" id="esetSeg">
+              <button type="button" data-eset="Single axis" aria-pressed="true">Single axis</button>
+              <button type="button" data-eset="Dual axis" aria-pressed="false">Dual axis</button>
+            </div>
+          </div>
+          <div class="sliders">
+            <div><div class="row"><label class="ctl-label" for="ePrice" style="margin:0">Electricity value</label><output id="ePriceOut"></output></div><input type="range" id="ePrice"></div>
+            <div><div class="row"><label class="ctl-label" for="ePrem" style="margin:0">Tracker extra cost</label><output id="ePremOut"></output></div><input type="range" id="ePrem"></div>
+            <div><div class="row"><label class="ctl-label" for="eOm" style="margin:0">Extra maintenance</label><output id="eOmOut"></output></div><input type="range" id="eOm"></div>
+            <div><div class="row"><label class="ctl-label" for="eRate" style="margin:0">Discount rate</label><output id="eRateOut"></output></div><input type="range" id="eRate" min="2" max="10" step="0.5" value="6"></div>
+            <div><div class="row"><label class="ctl-label" for="eLife" style="margin:0">System life</label><output id="eLifeOut"></output></div><input type="range" id="eLife" min="10" max="35" step="1" value="25"></div>
+          </div>
+          <div class="verdict" id="verdict" role="status"><b id="verdictT"></b><span id="verdictS"></span></div>
+          <div class="stats two">
+            <div class="stat"><span>Break-even extra cost</span><b id="eBreak">–</b></div>
+            <div class="stat"><span>Simple payback</span><b id="ePay">–</b></div>
+          </div>
+          <p class="note" id="econNote"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="section-sim" aria-labelledby="ctrl-title">
     <div class="inner">
       <p class="step">Replay the controller</p>
@@ -289,6 +402,7 @@
       <div class="prose">
         <p>Every hour of the year, the page finds the sun with the NOAA solar equations,<sup class="cite"><a href="#src-35">35</a></sup> then splits the light on each panel into the direct beam, sky light using the Perez model,<sup class="cite"><a href="#src-10">10</a></sup> and light reflected off the ground. It removes what the glass reflects,<sup class="cite"><a href="#src-11">11</a>,<a href="#src-12">12</a></sup> works out how hot the cells get with Sandia's model,<sup class="cite"><a href="#src-13">13</a></sup> and converts to DC and AC power with the PVWatts equations and 14.08% system losses.<sup class="cite"><a href="#src-16">16</a></sup> The panels and inverter use real specifications from the CEC database.<sup class="cite"><a href="#src-17">17</a></sup></p>
         <p id="howCheck"></p>
+        <p id="howRows"></p>
         <p>The one simplification: the full model uses a detailed single diode model for the panel and Sandia's inverter model,<sup class="cite"><a href="#src-15">15</a></sup> while this page uses the lighter PVWatts equations for both. Between hours, the weather is interpolated from the hourly averages.</p>
       </div>
       <div class="cta">
@@ -297,7 +411,12 @@
       </div>
       <p class="step" style="margin-top:44px">Sources</p>
       <ul class="sources">
+        <li id="src-1"><span class="n">1</span><span>Lawrence Berkeley National Laboratory, <i>Utility-Scale Solar, 2026 Edition</i> (slides, Oct. 2026): installed cost $1.31/W DC tracking vs $1.30/W DC fixed tilt for 2025 projects; PPA prices typically $25 to 35/MWh in CAISO and the non-ISO West. <a href="https://eta-publications.lbl.gov/sites/default/files/2026-10/utility_scale_solar_2026_edition_slides.pdf" target="_blank" rel="noopener">eta-publications.lbl.gov</a></span></li>
+        <li id="src-2"><span class="n">2</span><span>NREL, PV system cost benchmark, Q1 2024 (report 92257): residential modeled market price $3.15/W DC; tracking premium of $0.20/W DC from Berkeley Lab 2023 data. <a href="https://nrel.gov/docs/fy25osti/92257.pdf" target="_blank" rel="noopener">nrel.gov/docs/fy25osti/92257.pdf</a></span></li>
+        <li id="src-3"><span class="n">3</span><span>EnergySage, "Is a solar tracking system worth it?": trackers add "40 to 100 percent" to system cost. <a href="https://www.energysage.com/business-solutions/solar-trackers-everything-need-know/" target="_blank" rel="noopener">energysage.com</a></span></li>
+        <li id="src-4"><span class="n">4</span><span>EnergySage, "Cost of electricity in Arizona": average residential rate of 15 cents/kWh, November 2026. <a href="https://www.energysage.com/local-data/electricity-cost/az/" target="_blank" rel="noopener">energysage.com</a></span></li>
         <li id="src-6"><span class="n">6</span><span>The Fredericks Company, "AN 1004: Inclinometers for Solar Tracking Systems." <a href="https://www.frederickscompany.com/application-notes/inclinometers-for-solar-tracking-systems/" target="_blank" rel="noopener">frederickscompany.com</a></span></li>
+        <li id="src-7"><span class="n">7</span><span>K. Anderson and M. Mikofski, "Slope-Aware Backtracking for Single-Axis Trackers," NREL/TP-5K00-76626, 2020. <a href="https://doi.org/10.2172/1660126" target="_blank" rel="noopener">doi.org/10.2172/1660126</a></span></li>
         <li id="src-8"><span class="n">8</span><span>K. S. Anderson et al., "pvlib python: 2023 project update," <i>JOSS</i> 8(92), 5994, 2023. <a href="https://doi.org/10.21105/joss.05994" target="_blank" rel="noopener">doi.org/10.21105/joss.05994</a></span></li>
         <li id="src-9"><span class="n">9</span><span>I. Reda and A. Andreas, "Solar position algorithm for solar radiation applications," <i>Solar Energy</i> 76(5), 2004. <a href="https://doi.org/10.1016/j.solener.2003.12.003" target="_blank" rel="noopener">doi.org/10.1016/j.solener.2003.12.003</a></span></li>
         <li id="src-10"><span class="n">10</span><span>R. Perez et al., "Modeling daylight availability and irradiance components from direct and global irradiance," <i>Solar Energy</i> 44(5), 1990. <a href="https://archive-ouverte.unige.ch/unige:17206" target="_blank" rel="noopener">archive-ouverte.unige.ch/unige:17206</a></span></li>
@@ -311,8 +430,10 @@
         <li id="src-30"><span class="n">30</span><span>Arduino, "analogRead()." <a href="https://docs.arduino.cc/language-reference/en/functions/analog-io/analogRead/" target="_blank" rel="noopener">docs.arduino.cc</a></span></li>
         <li id="src-32"><span class="n">32</span><span>SG90 micro servo datasheet, operating speed 0.1 s per 60°. <a href="https://bit.nkust.edu.tw/~csshieh/teach/111A/mc/datasheet/SG90.pdf" target="_blank" rel="noopener">SG90.pdf</a></span></li>
         <li id="src-35"><span class="n">35</span><span>NOAA Global Monitoring Laboratory, "Solar Calculation Details," based on J. Meeus, <i>Astronomical Algorithms</i>. <a href="https://gml.noaa.gov/grad/solcalc/calcdetails.html" target="_blank" rel="noopener">gml.noaa.gov/grad/solcalc</a></span></li>
+        <li id="src-36"><span class="n">36</span><span>K. S. Anderson and A. R. Jensen, "Shaded fraction and backtracking in single-axis trackers on rolling terrain," <i>J. Renewable Sustainable Energy</i> 16(2), 023504, 2024. <a href="https://doi.org/10.1063/5.0202220" target="_blank" rel="noopener">doi.org/10.1063/5.0202220</a></span></li>
+        <li id="src-37"><span class="n">37</span><span>F. Martínez-Moreno, J. Muñoz and E. Lorenzo, "Experimental model to estimate shading losses on PV arrays," <i>Solar Energy Materials and Solar Cells</i> 94(12), 2010. <a href="https://doi.org/10.1016/j.solmat.2010.07.029" target="_blank" rel="noopener">doi.org/10.1016/j.solmat.2010.07.029</a></span></li>
         <li id="src-r"><span class="n">R</span><span>My validation run: <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/web-sim/validation.json" target="_blank" rel="noopener">web-sim/validation.json</a>, produced by <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/web-sim/validate.js" target="_blank" rel="noopener">validate.js</a>, which runs this page's model against the pvlib results and NREL's Solar Position Algorithm.<sup class="cite"><a href="#src-9">9</a></sup></span></li>
-        <li id="src-a"><span class="n">A</span><span>Assumptions: the divider wall geometry, cloud and flicker statistics, and light sensor lag in the controller replay are my modeling choices, listed with reasoning in the <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/README.md" target="_blank" rel="noopener">main README</a>.</span></li>
+        <li id="src-a"><span class="n">A</span><span>Assumptions: the divider wall geometry, cloud and flicker statistics, and light sensor lag in the controller replay; the row spacing and the three bypass blocks per module in the farm section; and the extra maintenance ($20/kW per year for a home, $2/kW for a farm), 6% discount rate, 25 year life and 0.5% yearly panel degradation in the payback section. These are my modeling choices, listed with reasoning in the <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/README.md" target="_blank" rel="noopener">main README</a>.</span></li>
       </ul>
       <p class="note">Numbers match <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/SOURCES.md" target="_blank" rel="noopener" style="color:var(--accent)">SOURCES.md</a> and the case study.</p>
     </div>
@@ -408,6 +529,457 @@
         "dual_axis_vs_fixed_pvlib_pct": 34.7
       }
     }
+  },
+  "rows": {
+    "rotation": {
+      "Phoenix, AZ": {
+        "gcr": 0.35,
+        "hours_compared": 1238,
+        "max_rotation_error_deg": 0.122,
+        "max_shaded_fraction_error": 0.0031
+      },
+      "Des Moines, IA": {
+        "gcr": 0.35,
+        "hours_compared": 1244,
+        "max_rotation_error_deg": 0.06,
+        "max_shaded_fraction_error": 0.0018
+      }
+    },
+    "annual": [
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.2,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 10547.9,
+        "pvlib_kwh": 10591.4,
+        "diff_vs_pvlib_pct": -0.41
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.2,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 10383.1,
+        "pvlib_kwh": 10423.3,
+        "diff_vs_pvlib_pct": -0.39
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.2,
+        "case": "Backtracking",
+        "browser_kwh": 10510,
+        "pvlib_kwh": 10553.5,
+        "diff_vs_pvlib_pct": -0.41
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.25,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 10472,
+        "pvlib_kwh": 10514.1,
+        "diff_vs_pvlib_pct": -0.4
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.25,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 10070.5,
+        "pvlib_kwh": 10105.2,
+        "diff_vs_pvlib_pct": -0.34
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.25,
+        "case": "Backtracking",
+        "browser_kwh": 10413.3,
+        "pvlib_kwh": 10455.1,
+        "diff_vs_pvlib_pct": -0.4
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.3,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 10369.9,
+        "pvlib_kwh": 10410.3,
+        "diff_vs_pvlib_pct": -0.39
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.3,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 9902.9,
+        "pvlib_kwh": 9934.5,
+        "diff_vs_pvlib_pct": -0.32
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.3,
+        "case": "Backtracking",
+        "browser_kwh": 10283.4,
+        "pvlib_kwh": 10323.1,
+        "diff_vs_pvlib_pct": -0.38
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.35,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 10266.5,
+        "pvlib_kwh": 10305.4,
+        "diff_vs_pvlib_pct": -0.38
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.35,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 9691.5,
+        "pvlib_kwh": 9719.8,
+        "diff_vs_pvlib_pct": -0.29
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.35,
+        "case": "Backtracking",
+        "browser_kwh": 10151,
+        "pvlib_kwh": 10188.7,
+        "diff_vs_pvlib_pct": -0.37
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.4,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 10161,
+        "pvlib_kwh": 10198.4,
+        "diff_vs_pvlib_pct": -0.37
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.4,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 9494.3,
+        "pvlib_kwh": 9519.6,
+        "diff_vs_pvlib_pct": -0.27
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.4,
+        "case": "Backtracking",
+        "browser_kwh": 10016.2,
+        "pvlib_kwh": 10051.9,
+        "diff_vs_pvlib_pct": -0.36
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.45,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 10037.3,
+        "pvlib_kwh": 10073.3,
+        "diff_vs_pvlib_pct": -0.36
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.45,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 9067.9,
+        "pvlib_kwh": 9087.2,
+        "diff_vs_pvlib_pct": -0.21
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.45,
+        "case": "Backtracking",
+        "browser_kwh": 9858.3,
+        "pvlib_kwh": 9892.2,
+        "diff_vs_pvlib_pct": -0.34
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.5,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 9898.3,
+        "pvlib_kwh": 9933.1,
+        "diff_vs_pvlib_pct": -0.35
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.5,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 8810.9,
+        "pvlib_kwh": 8826.8,
+        "diff_vs_pvlib_pct": -0.18
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.5,
+        "case": "Backtracking",
+        "browser_kwh": 9681.1,
+        "pvlib_kwh": 9713.3,
+        "diff_vs_pvlib_pct": -0.33
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.55,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 9757,
+        "pvlib_kwh": 9790.6,
+        "diff_vs_pvlib_pct": -0.34
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.55,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 8534.2,
+        "pvlib_kwh": 8547.1,
+        "diff_vs_pvlib_pct": -0.15
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.55,
+        "case": "Backtracking",
+        "browser_kwh": 9499.5,
+        "pvlib_kwh": 9530,
+        "diff_vs_pvlib_pct": -0.32
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.6,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 9612.2,
+        "pvlib_kwh": 9644.7,
+        "diff_vs_pvlib_pct": -0.34
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.6,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 8201.5,
+        "pvlib_kwh": 8211.2,
+        "diff_vs_pvlib_pct": -0.12
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.6,
+        "case": "Backtracking",
+        "browser_kwh": 9312.8,
+        "pvlib_kwh": 9341.7,
+        "diff_vs_pvlib_pct": -0.31
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.2,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 7496.6,
+        "pvlib_kwh": 7535.6,
+        "diff_vs_pvlib_pct": -0.52
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.2,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 7357.8,
+        "pvlib_kwh": 7394.9,
+        "diff_vs_pvlib_pct": -0.5
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.2,
+        "case": "Backtracking",
+        "browser_kwh": 7438.4,
+        "pvlib_kwh": 7477.1,
+        "diff_vs_pvlib_pct": -0.52
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.25,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 7447.8,
+        "pvlib_kwh": 7486,
+        "diff_vs_pvlib_pct": -0.51
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.25,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 7229.8,
+        "pvlib_kwh": 7264.3,
+        "diff_vs_pvlib_pct": -0.48
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.25,
+        "case": "Backtracking",
+        "browser_kwh": 7372.9,
+        "pvlib_kwh": 7410.5,
+        "diff_vs_pvlib_pct": -0.51
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.3,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 7385,
+        "pvlib_kwh": 7422.1,
+        "diff_vs_pvlib_pct": -0.5
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.3,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 7080,
+        "pvlib_kwh": 7111.7,
+        "diff_vs_pvlib_pct": -0.45
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.3,
+        "case": "Backtracking",
+        "browser_kwh": 7290.2,
+        "pvlib_kwh": 7326.6,
+        "diff_vs_pvlib_pct": -0.5
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.35,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 7315.1,
+        "pvlib_kwh": 7351,
+        "diff_vs_pvlib_pct": -0.49
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.35,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 6921.1,
+        "pvlib_kwh": 6949.7,
+        "diff_vs_pvlib_pct": -0.41
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.35,
+        "case": "Backtracking",
+        "browser_kwh": 7198.9,
+        "pvlib_kwh": 7233.8,
+        "diff_vs_pvlib_pct": -0.48
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.4,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 7240.3,
+        "pvlib_kwh": 7275.1,
+        "diff_vs_pvlib_pct": -0.48
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.4,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 6755.5,
+        "pvlib_kwh": 6781.2,
+        "diff_vs_pvlib_pct": -0.38
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.4,
+        "case": "Backtracking",
+        "browser_kwh": 7101.7,
+        "pvlib_kwh": 7134.9,
+        "diff_vs_pvlib_pct": -0.47
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.45,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 7156.8,
+        "pvlib_kwh": 7190.3,
+        "diff_vs_pvlib_pct": -0.47
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.45,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 6568.3,
+        "pvlib_kwh": 6589.2,
+        "diff_vs_pvlib_pct": -0.32
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.45,
+        "case": "Backtracking",
+        "browser_kwh": 6993.5,
+        "pvlib_kwh": 7025,
+        "diff_vs_pvlib_pct": -0.45
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.5,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 7070,
+        "pvlib_kwh": 7102.2,
+        "diff_vs_pvlib_pct": -0.45
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.5,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 6373.1,
+        "pvlib_kwh": 6392.1,
+        "diff_vs_pvlib_pct": -0.3
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.5,
+        "case": "Backtracking",
+        "browser_kwh": 6880.8,
+        "pvlib_kwh": 6910.6,
+        "diff_vs_pvlib_pct": -0.43
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.55,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 6978.7,
+        "pvlib_kwh": 7009.7,
+        "diff_vs_pvlib_pct": -0.44
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.55,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 6185.7,
+        "pvlib_kwh": 6202,
+        "diff_vs_pvlib_pct": -0.26
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.55,
+        "case": "Backtracking",
+        "browser_kwh": 6761.2,
+        "pvlib_kwh": 6789.3,
+        "diff_vs_pvlib_pct": -0.41
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.6,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 6882.1,
+        "pvlib_kwh": 6911.8,
+        "diff_vs_pvlib_pct": -0.43
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.6,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 5974.5,
+        "pvlib_kwh": 5987.9,
+        "diff_vs_pvlib_pct": -0.22
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.6,
+        "case": "Backtracking",
+        "browser_kwh": 6633.4,
+        "pvlib_kwh": 6659.9,
+        "diff_vs_pvlib_pct": -0.4
+      }
+    ],
+    "max_abs_diff_pct": 0.52
   },
   "max_abs_diff_pct": 0.57
 };
@@ -525,6 +1097,7 @@
     var f = r.totals["Fixed, best tilt"];
     document.getElementById("yearNote").innerHTML = "Tracking gain over fixed tilt here: single axis +" + (100 * (r.totals["Single axis"] / f - 1)).toFixed(1) +
       "%, dual axis +" + (100 * (r.totals["Dual axis"] / f - 1)).toFixed(1) + "%. Fixed panels face south at " + site.best_tilt + "°, the best tilt found by the full model.<sup class=\"cite\"><a href=\"#src-r\">R</a></sup>";
+    computeRows();
   }
   document.getElementById("howCheck").innerHTML = "I checked it against the full pvlib model over a whole year: annual energy agrees within " +
     VALID.max_abs_diff_pct.toFixed(2) + "% for every site and panel setup, and the sun's position agrees with NREL's Solar Position Algorithm<sup class=\"cite\"><a href=\"#src-9\">9</a></sup> to within " +
@@ -736,6 +1309,7 @@
     var e = evalAt(state.site, state.day, state.time);
     drawScene(e);
     drawDay();
+    drawRows(e);
     document.getElementById("wDni").textContent = Math.round(e.w.dni) + " W/m²";
     document.getElementById("wDhi").textContent = Math.round(e.w.dhi) + " W/m²";
     document.getElementById("wTemp").textContent = e.w.temp.toFixed(1) + " °C";
@@ -773,6 +1347,253 @@
       document.querySelectorAll("#speedSeg button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
     });
   });
+
+  /* ---------- trackers in rows ---------- */
+  var rows = { gcr: 0.35, strat: "backtrack", cache: {} };
+  var CASE_LABEL = {
+    "True tracking, linear shade loss": "Pointing at the sun, loss in proportion to shade",
+    "True tracking, bypass block loss": "Pointing at the sun, bypass blocks switch off",
+    "Backtracking": "Backtracking"
+  };
+  function rowYear() {
+    var key = state.site + "|" + rows.gcr.toFixed(2);
+    if (!rows.cache[key]) rows.cache[key] = M.annualRows(DATA.sites[state.site], DATA, rows.gcr);
+    return rows.cache[key];
+  }
+  function computeRows() {
+    var r = rowYear(), y = yearCache[state.site].totals, alone = y["Single axis"], fixed = y["Fixed, best tilt"];
+    var tb = document.getElementById("rowsTable"); tb.textContent = "";
+    function add(label, kwh, ref, isBest) {
+      var tr = el("tr");
+      tr.appendChild(el("td", isBest ? { "class": "best" } : null, label));
+      tr.appendChild(el("td", null, Math.round(kwh).toLocaleString("en-US") + " kWh"));
+      tr.appendChild(el("td", null, ref == null ? "–" : Math.round(ref).toLocaleString("en-US")));
+      var d = 100 * (kwh / alone - 1);
+      tr.appendChild(el("td", null, label === "Standing alone" ? "–" : d.toFixed(1) + "%"));
+      var g = 100 * (kwh / fixed - 1);
+      tr.appendChild(el("td", { "class": g > 0 ? "good" : "" }, (g >= 0 ? "+" : "") + g.toFixed(1) + "%"));
+      tb.appendChild(tr);
+    }
+    add("Standing alone", alone, DATA.sites[state.site].pvlib_annual_kwh["Single axis"], false);
+    Object.keys(CASE_LABEL).forEach(function (k) {
+      var ref = null;
+      VALID.rows.annual.forEach(function (a) { if (a.site === state.site && a["case"] === k && Math.abs(a.gcr - rows.gcr) < 1e-6) ref = a.pvlib_kwh; });
+      add(CASE_LABEL[k], r.totals[k], ref, k === "Backtracking");
+    });
+    document.getElementById("rowsSub").innerHTML = state.site.split(",")[0] + ", panels covering " + Math.round(rows.gcr * 100) +
+      "% of the ground. Without backtracking, some part of a row is shaded in " + Math.round(100 * r.shadedHours["True tracking, linear shade loss"] / r.daylightHours) +
+      "% of daylight hours.<sup class=\"cite\"><a href=\"#src-r\">R</a></sup>";
+    updateEcon();
+  }
+  var rowScene = document.getElementById("rowScene");
+  function drawRows(e) {
+    var F = fitCanvas(rowScene), ctx = F.ctx, W = F.w, H = F.h;
+    var sun = e.sun, up = sun.zenith < 90;
+    var o = M.rowTracker(sun, rows.gcr, rows.strat, "blocks");
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, up ? v("--sky-top") : "#C9CED6"); g.addColorStop(1, up ? v("--sky-low") : "#E3E1DC");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    var gy = H * 0.84, N = 4, pitch = W / (N + 0.6), cw = rows.gcr * pitch, ph = pitch * 0.34;
+    ctx.fillStyle = v("--ground"); ctx.fillRect(0, gy, W, H - gy);
+    var th = o.rotation * Math.PI / 180, id = o.ideal * Math.PI / 180;
+    var sx = Math.sin(id), sy = Math.cos(id);              // toward the sun, in the east-up plane
+    var dx = Math.cos(th);                                 // horizontal reach of the panel
+    var xs = []; for (var i = 0; i < N; i++) xs.push(pitch * (i + 0.8));
+    // sun and its direction
+    if (up) {
+      var R0 = Math.min(W * 0.46, gy - 26), cx = W / 2 + R0 * sx, cy = gy - ph - R0 * sy * 0.92;
+      cy = Math.max(22, cy);
+      var glow = ctx.createRadialGradient(cx, cy, 2, cx, cy, 28); glow.addColorStop(0, "rgba(255,206,84,.85)"); glow.addColorStop(1, "rgba(255,206,84,0)");
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(cx, cy, 28, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#FFC23D"; ctx.beginPath(); ctx.arc(cx, cy, 9, 0, Math.PI * 2); ctx.fill();
+    }
+    // shadows on the ground
+    if (up && sy > 0.03) {
+      ctx.fillStyle = "rgba(60,55,45,.16)";
+      xs.forEach(function (x) {
+        var hA = ph + Math.sin(th) * cw / 2, hB = ph - Math.sin(th) * cw / 2;   // heights of the west and east edges
+        var gA = (x - dx * cw / 2) - hA * sx / sy, gB = (x + dx * cw / 2) - hB * sx / sy;
+        ctx.fillRect(Math.min(gA, gB), gy, Math.abs(gB - gA), 5);
+      });
+    }
+    // light rays grazing the top edge of each row (the shadow line)
+    if (up && o.shaded > 0) {
+      ctx.strokeStyle = "rgba(180,71,31,.5)"; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+      xs.forEach(function (x) {
+        var side = sx > 0 ? -1 : 1;                           // the high edge is the one away from the sun
+        var ex = x + side * dx * cw / 2, ehh = ph - Math.sin(th) * side * cw / 2;
+        var t = ehh / Math.max(sy, 0.02);
+        ctx.beginPath(); ctx.moveTo(ex, gy - ehh); ctx.lineTo(ex - sx * t, gy); ctx.stroke();
+      });
+      ctx.setLineDash([]);
+    }
+    // posts and panels
+    xs.forEach(function (x, i) {
+      ctx.strokeStyle = "#8A8F96"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x, gy - ph); ctx.stroke();
+      var x1 = x - dx * cw / 2, y1 = gy - (ph + Math.sin(th) * cw / 2), x2 = x + dx * cw / 2, y2 = gy - (ph - Math.sin(th) * cw / 2);   // west edge up when tilted east
+      ctx.lineCap = "round"; ctx.lineWidth = 6; ctx.strokeStyle = up ? "#2C4A7A" : "#59606B";
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      // shaded part: starts at the low (sunward) edge; the row nearest the sun has no neighbor in front
+      var sunward = sx > 0 ? N - 1 : 0;
+      if (up && o.shaded > 0 && i !== sunward) {
+        var lx = sx > 0 ? x2 : x1, ly = sx > 0 ? y2 : y1, hx = sx > 0 ? x1 : x2, hy = sx > 0 ? y1 : y2;
+        ctx.strokeStyle = "#B4471F"; ctx.beginPath(); ctx.moveTo(lx, ly);
+        ctx.lineTo(lx + (hx - lx) * o.shaded, ly + (hy - ly) * o.shaded); ctx.stroke();
+      }
+      ctx.lineCap = "butt";
+    });
+    ctx.fillStyle = v("--muted"); ctx.font = "12px " + v("--font-body");
+    ctx.textAlign = "left"; ctx.fillText("West", 12, gy + 20); ctx.textAlign = "right"; ctx.fillText("East", W - 12, gy + 20);
+    ctx.textAlign = "left"; ctx.fillStyle = v("--fg"); ctx.font = "600 12px " + v("--font-body");
+    ctx.fillText("Side view, looking north. " + dateLabel(state.day) + ", " + timeLabel(state.time), 12, 22);
+    if (up && o.shaded > 0) { ctx.fillStyle = "#B4471F"; ctx.font = "12px " + v("--font-body"); ctx.fillText("Red: the part of each row in its neighbor's shadow", 12, 40); }
+
+    // readouts
+    var ang = Math.abs(o.rotation), dir = o.rotation > 0.5 ? " E" : o.rotation < -0.5 ? " W" : "";
+    document.getElementById("rowAngle").textContent = up ? ang.toFixed(0) + "°" + dir : "–";
+    document.getElementById("rowShade").textContent = up ? Math.round(o.shaded * 100) + "%" : "–";
+    document.getElementById("stShade").classList.toggle("alert", up && o.shaded > 0);
+    var doy = state.day, pr = M.step(e.w, sun, o, doy, DATA).pac / 1000, alone = e.res["Single axis"].r.pac / 1000;
+    document.getElementById("rowPower").textContent = pr.toFixed(2) + " kW";
+    var note = !up ? "The sun is down." :
+      rows.strat === "backtrack" ? (Math.abs(o.rotation - o.ideal) > 0.5 ? "Backtracking now: the sun is " + Math.abs(o.ideal).toFixed(0) + "° from overhead, but the rows sit at " + ang.toFixed(0) + "° so no shadow reaches the next row." : "The sun is high enough that no row shades another, so the rows point straight at it.") :
+      (o.shaded > 0 ? "Each row shades " + Math.round(o.shaded * 100) + "% of the next one. With bypass blocks switching off, this row makes " + pr.toFixed(2) + " kW." : "No shade right now, so both strategies do the same thing.");
+    document.getElementById("rowNote").textContent = note + " A tracker standing alone would make " + alone.toFixed(2) + " kW.";
+    document.getElementById("time2Out").textContent = timeLabel(state.time);
+    document.getElementById("time2").value = state.time;
+  }
+  document.querySelectorAll("#stratSeg button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      rows.strat = b.getAttribute("data-strat");
+      document.querySelectorAll("#stratSeg button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      render();
+    });
+  });
+  var gcrIn = document.getElementById("gcr");
+  gcrIn.addEventListener("input", function () { rows.gcr = +gcrIn.value; document.getElementById("gcrOut").textContent = Math.round(rows.gcr * 100) + "%"; render(); });
+  gcrIn.addEventListener("change", computeRows);
+  document.getElementById("time2").addEventListener("input", function () { state.time = +this.value; syncTime(); render(); });
+
+  /* ---------- economics ---------- */
+  var KWP = DATA.module.pdc0_w / 1000, DEGRADATION = 0.005;
+  var MARKETS = {
+    home: { name: "home", price: 0.15, priceMax: 0.30, priceStep: 0.005, prem: 1.26, premMax: 3.5, premStep: 0.02, premLow: 1.26, premHigh: 3.15, om: 20, omMax: 40,
+            band: "What trackers cost on homes: 40 to 100% of a $3.15/W system" },
+    farm: { name: "farm", price: 0.03, priceMax: 0.08, priceStep: 0.001, prem: 0.01, premMax: 0.40, premStep: 0.005, premLow: 0.01, premHigh: 0.20, om: 2, omMax: 10,
+            band: "What trackers cost on farms: $0.01/W (2025) to $0.20/W (2023)" }
+  };
+  var econ = { mkt: "home", setup: "Single axis", price: 0.15, prem: 1.26, om: 20, rate: 6, life: 25 };
+  var ePrice = document.getElementById("ePrice"), ePrem = document.getElementById("ePrem"), eOm = document.getElementById("eOm"),
+      eRate = document.getElementById("eRate"), eLife = document.getElementById("eLife");
+  function pvFactor() {
+    var s = 0, r = econ.rate / 100;
+    for (var t = 0; t < econ.life; t++) s += Math.pow(1 - DEGRADATION, t) / Math.pow(1 + r, t + 1);
+    return s;
+  }
+  function extraYield() {            // extra kWh per kW of panels per year, over fixed tilt
+    var y = yearCache[state.site].totals, tracker = y[econ.setup], inRows = false;
+    if (econ.mkt === "farm" && econ.setup === "Single axis") { tracker = rowYear().totals["Backtracking"]; inRows = true; }
+    return { extra: (tracker - y["Fixed, best tilt"]) / KWP, gain: 100 * (tracker / y["Fixed, best tilt"] - 1), inRows: inRows };
+  }
+  function breakeven(price, ex, pvf) { return pvf * (ex * price - econ.om) / 1000; }
+  function setMarket(k) {
+    var m = MARKETS[k]; econ.mkt = k; econ.price = m.price; econ.prem = m.prem; econ.om = m.om;
+    ePrice.min = 0.005; ePrice.max = m.priceMax; ePrice.step = m.priceStep; ePrice.value = m.price;
+    ePrem.min = 0; ePrem.max = m.premMax; ePrem.step = m.premStep; ePrem.value = m.prem;
+    eOm.min = 0; eOm.max = m.omMax; eOm.step = 1; eOm.value = m.om;
+  }
+  var econGeo = {}, econHover = null;
+  function updateEcon() {
+    if (!yearCache[state.site]) return;
+    var m = MARKETS[econ.mkt], y = extraYield(), pvf = pvFactor(), be = breakeven(econ.price, y.extra, pvf);
+    var yearly = y.extra * econ.price - econ.om, payback = yearly > 0 ? econ.prem * 1000 / yearly : Infinity;
+    document.getElementById("ePriceOut").textContent = (econ.price * 100).toFixed(1) + "¢ per kWh";
+    document.getElementById("ePremOut").textContent = "$" + econ.prem.toFixed(2) + " per watt";
+    document.getElementById("eOmOut").textContent = "$" + econ.om.toFixed(0) + " per kW a year";
+    document.getElementById("eRateOut").textContent = econ.rate.toFixed(1) + "%";
+    document.getElementById("eLifeOut").textContent = econ.life + " years";
+    document.getElementById("eBreak").textContent = (be < 0 ? "−$" : "$") + Math.abs(be).toFixed(2) + "/W";
+    document.getElementById("ePay").textContent = isFinite(payback) ? (payback > 99 ? "99+ yr" : payback.toFixed(1) + " yr") : "never";
+    var pays = econ.prem <= be, vd = document.getElementById("verdict");
+    vd.className = "verdict " + (pays ? "yes" : "no");
+    document.getElementById("verdictT").textContent = pays ? "Pays for itself" : "Does not pay for itself";
+    document.getElementById("verdictS").textContent = pays
+      ? "The tracker costs $" + econ.prem.toFixed(2) + "/W extra and its extra energy is worth $" + be.toFixed(2) + "/W over " + econ.life + " years."
+      : (be > 0 ? "The extra energy is worth $" + be.toFixed(2) + "/W over " + econ.life + " years, less than the $" + econ.prem.toFixed(2) + "/W the tracker adds."
+                : "The extra maintenance costs more than the extra energy is worth.");
+    document.getElementById("econSub").innerHTML = state.site.split(",")[0] + ", " + econ.setup.toLowerCase() + " tracker" + (y.inRows ? " in rows with backtracking (" + Math.round(rows.gcr * 100) + "% ground cover)" : "") +
+      ": " + Math.round(y.extra) + " extra kWh a year per kW of panels, a " + y.gain.toFixed(1) + "% gain over fixed tilt.<sup class=\"cite\"><a href=\"#src-r\">R</a></sup>";
+    document.getElementById("econNote").textContent = (econ.mkt === "farm" && econ.setup === "Dual axis" ? "I found no market price data for dual axis trackers on solar farms, so the shaded band here is the single axis range. " : "") +
+      (econ.mkt === "home" ? "The 15¢ starting price is the Arizona average; set your own. " : "The 3¢ starting price is a typical power purchase agreement in the western US. ") +
+      "Panels are assumed to lose 0.5% of output a year.";
+    drawEcon(y, pvf, m);
+  }
+  var econChart = document.getElementById("econChart"), econTip = document.getElementById("econTip");
+  function drawEcon(y, pvf, m) {
+    var F = fitCanvas(econChart), ctx = F.ctx, W = F.w, H = F.h;
+    var L = 46, Rr = 12, T = 10, B = 34, pw = W - L - Rr, ph = H - T - B, xmax = m.priceMax, ymax = m.premMax;
+    function X(p) { return L + p / xmax * pw; }
+    function Y(c) { return T + ph - Math.max(0, Math.min(ymax, c)) / ymax * ph; }
+    econGeo = { L: L, pw: pw, xmax: xmax, X: X, y: y, pvf: pvf, W: W };
+    ctx.clearRect(0, 0, W, H);
+    ctx.font = "11px " + v("--font-body"); ctx.fillStyle = v("--muted"); ctx.strokeStyle = v("--rule"); ctx.lineWidth = 1;
+    var ys = econ.mkt === "home" ? [0, 1, 2, 3] : [0, 0.1, 0.2, 0.3, 0.4];
+    ys.forEach(function (c) { ctx.beginPath(); ctx.moveTo(L, Y(c)); ctx.lineTo(W - Rr, Y(c)); ctx.stroke(); ctx.textAlign = "right"; ctx.fillText("$" + c.toFixed(econ.mkt === "home" ? 0 : 1) + "/W", L - 6, Y(c) + 4); });
+    ctx.textAlign = "center";
+    var nx = W < 460 ? 3 : 6;
+    for (var i = 0; i <= nx; i++) { var p = xmax * i / nx; ctx.fillText((p * 100).toFixed(econ.mkt === "home" ? 0 : 1) + "¢", X(p), T + ph + 16); }
+    ctx.fillText("Electricity value per kWh", L + pw / 2, H - 4);
+    // market cost band
+    ctx.fillStyle = "rgba(70,96,127,.12)"; ctx.fillRect(L, Y(m.premHigh), pw, Y(m.premLow) - Y(m.premHigh) || 2);
+    document.getElementById("econBandKey").textContent = m.band;
+    document.getElementById("econLineKey").style.background = COLOR[econ.setup];
+    // break-even line (clipped to the plot)
+    ctx.save(); ctx.beginPath(); ctx.rect(L, T, pw, ph); ctx.clip();
+    ctx.strokeStyle = COLOR[econ.setup]; ctx.lineWidth = 2.5; ctx.beginPath();
+    ctx.moveTo(X(0), T + ph - breakeven(0, y.extra, pvf) / ymax * ph); ctx.lineTo(X(xmax), T + ph - breakeven(xmax, y.extra, pvf) / ymax * ph); ctx.stroke();
+    ctx.restore();
+    // your point
+    var px = X(Math.min(xmax, econ.price)), py = Y(econ.prem), pays = econ.prem <= breakeven(econ.price, y.extra, pvf);
+    ctx.fillStyle = pays ? "#1F6142" : "#B4471F"; ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = v("--card"); ctx.lineWidth = 2; ctx.stroke();
+    document.getElementById("econDotKey").style.background = pays ? "#1F6142" : "#B4471F";
+    if (econHover != null) {
+      var hx = X(econHover); ctx.strokeStyle = v("--accent"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(hx, T); ctx.lineTo(hx, T + ph); ctx.stroke();
+    }
+  }
+  econChart.addEventListener("pointermove", function (ev) {
+    var r = econChart.getBoundingClientRect(), p = (ev.clientX - r.left - econGeo.L) / econGeo.pw * econGeo.xmax;
+    if (p < 0 || p > econGeo.xmax) { econHover = null; econTip.style.display = "none"; updateEcon(); return; }
+    econHover = p;
+    var be = breakeven(p, econGeo.y.extra, econGeo.pvf);
+    econTip.textContent = "At " + (p * 100).toFixed(1) + "¢ per kWh, a tracker pays off if it adds less than " + (be > 0 ? "$" + be.toFixed(2) + "/W" : "nothing");
+    econTip.style.display = "block"; econTip.style.whiteSpace = "normal"; econTip.style.maxWidth = "220px";
+    var tx = econGeo.X(p) + 12; if (tx + 230 > econGeo.W) tx = econGeo.X(p) - 232;
+    econTip.style.left = Math.max(4, tx) + "px"; econTip.style.top = "6px";
+    updateEcon();
+  });
+  econChart.addEventListener("pointerleave", function () { econHover = null; econTip.style.display = "none"; updateEcon(); });
+  [[ePrice, "price"], [ePrem, "prem"], [eOm, "om"], [eRate, "rate"], [eLife, "life"]].forEach(function (p) {
+    p[0].addEventListener("input", function () { econ[p[1]] = +p[0].value; updateEcon(); });
+  });
+  document.querySelectorAll("#mktSeg button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      setMarket(b.getAttribute("data-mkt"));
+      document.querySelectorAll("#mktSeg button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      updateEcon();
+    });
+  });
+  document.querySelectorAll("#esetSeg button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      econ.setup = b.getAttribute("data-eset");
+      document.querySelectorAll("#esetSeg button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      updateEcon();
+    });
+  });
+  setMarket("home");
+  document.getElementById("howRows").innerHTML = "For trackers in rows, the page uses the published backtracking angle<sup class=\"cite\"><a href=\"#src-7\">7</a></sup> and shaded fraction<sup class=\"cite\"><a href=\"#src-36\">36</a></sup> equations. Against pvlib, the tracker angle agrees within " +
+    Math.max(VALID.rows.rotation["Phoenix, AZ"].max_rotation_error_deg, VALID.rows.rotation["Des Moines, IA"].max_rotation_error_deg).toFixed(2) + "°, and yearly energy within " + VALID.rows.max_abs_diff_pct.toFixed(2) +
+    "% across " + VALID.rows.annual.length + " combinations of site, row spacing and strategy.<sup class=\"cite\"><a href=\"#src-r\">R</a></sup>";
 
   /* ---------- controller replay ---------- */
   var cScene = document.getElementById("ctrlScene"), strip = document.getElementById("strip");
@@ -881,7 +1702,7 @@
   drawCtrl(); drawStrip(); updateStats();
   if (ctrl.running) setCtrlRunning(true);
   var rz = 0;
-  window.addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(function () { render(); drawCtrl(); drawStrip(); }, 120); });
+  window.addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(function () { render(); updateEcon(); drawCtrl(); drawStrip(); }, 120); });
 })();
 </script>
 </body>

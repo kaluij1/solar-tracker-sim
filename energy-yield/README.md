@@ -32,7 +32,7 @@ Energy rows: [`results/summary.csv`](results/summary.csv). Verdicts: [`results/e
 
 * **Tilting adds 15 to 21% over lying flat,** and the gain was larger at the more northern site.[^r-summary]
 * **For homes, trackers don't pay off.** In Phoenix the extra energy justifies at most $0.57/W extra for single axis (or $1.05/W for dual axis) over 25 years,[^r-econ] while trackers add 40 to 100% to a system's cost,[^es-trackers] or $1.26 to $3.15/W on a $3.15/W home system.[^nrel-bench]
-* **For solar farms, single axis tracking pays off because it now costs about the same as fixed racking:** $1.31/W DC with trackers vs $1.30/W DC fixed, for US projects built in 2025.[^lbl2026] The extra energy in Phoenix would justify up to $0.14/W.[^r-econ] That is consistent with 96% of new US utility solar capacity in 2025 using single axis trackers.[^lbl2026]
+* **For solar farms, single axis tracking pays off because it now costs about the same as fixed racking:** $1.31/W DC with trackers vs $1.30/W DC fixed, for US projects built in 2025.[^lbl2026] The extra energy in Phoenix would justify up to $0.14/W.[^r-econ] In rows with backtracking that falls to $0.10/W (part 4), still well above the premium.[^r-rows] That is consistent with 96% of new US utility solar capacity in 2025 using single axis trackers.[^lbl2026]
 * **The controller barely matters for energy, but it matters for wear.** Even the worst light-sensor controller loses under 0.2% of a year's energy, but the unfiltered one moves the motors 12 times as often as a controller that calculates the sun's position.[^r-ctrl]
 
 ## System
@@ -185,11 +185,41 @@ Commercial trackers are described as pointing by a sun-position algorithm and co
 the angle with an inclinometer, since light sensors stop giving usable feedback under
 clouds.[^fredericks]
 
+## 4. Trackers in rows
+
+Parts 1 to 3 model one tracker standing alone. On a solar farm the trackers stand in rows,
+and when the sun is low each row shades the next. Farms avoid this with backtracking: the
+rows turn back toward flat so that each row's shadow just misses the one behind it, which
+gives up some direct light.[^backtrack] `run_rows.py` reruns the single axis case in rows.
+
+With panels covering 35% of the ground (ground coverage ratio 0.35, an assumption[^a-rows]):[^r-rows]
+
+| Site | Single axis tracker in rows | AC energy (kWh/yr) | vs standing alone | Gain over fixed tilt | Farm break-even premium |
+|---|---|---|---|---|---|
+| Phoenix | Pointing at the sun, loss in proportion to shade | 10,305 | -3.8% | +20.3% | $0.11/W |
+| Phoenix | Pointing at the sun, bypass blocks switch off | 9,720 | -9.2% | +13.5% | $0.06/W |
+| Phoenix | **Backtracking** | 10,189 | -4.8% | +18.9% | $0.10/W |
+| Des Moines | Pointing at the sun, loss in proportion to shade | 7,351 | -4.4% | +12.7% | $0.04/W |
+| Des Moines | Pointing at the sun, bypass blocks switch off | 6,950 | -9.6% | +6.5% | $0.01/W |
+| Des Moines | **Backtracking** | 7,234 | -5.9% | +10.9% | $0.03/W |
+
+What this shows:
+
+* **Rows cost real energy.** In Phoenix, backtracking rows make 4.8% less than a tracker standing alone, so the gain over fixed tilt falls from 25.0% to 18.9%. In Des Moines it falls from 17.8% to 10.9%.
+* **Why farms backtrack.** Without it, some part of a row is shaded in 27% of daylight hours in Phoenix. If the loss were only in proportion to the shaded area, pointing at the sun would still win slightly. But a shaded cell limits the whole group of cells wired with it, so the bypass diode switches that block off.[^martinez] With modules in portrait the shadow edge runs along the row and crosses all three blocks at once (assumption[^a-rows]), and then backtracking wins clearly.
+* **The answer for farms holds, with less margin.** The Phoenix break-even premium falls from $0.14/W to $0.10/W, still above the $0.01/W premium of 2025 projects.[^lbl2026] In Des Moines it falls from $0.06/W to $0.03/W.
+
+The tracker angle and shaded fraction use pvlib's `tracking.singleaxis` and
+`shading.shaded_fraction1d`.[^shade1d] Only the direct beam is shaded: the neighbors also hide
+part of the sky and ground from each row, which is not modeled, and the fixed tilt baseline
+is unshaded. `results/rows.csv` has the same cases for ground coverage from 0.20 to 0.60.
+
 ## Running it
 
 ```
 pip install -r requirements.txt
 python run_energy.py          # energy for both sites, dataset check, pointing error curve
+python run_rows.py            # single axis trackers in rows: shading and backtracking
 python economics.py           # break-even premiums and payback
 python controller_energy.py   # combines the controller simulation with the energy model
 python make_figures.py        # writes figures/*.png
@@ -200,7 +230,7 @@ python make_figures.py        # writes figures/*.png
 ## Limitations
 
 * One typical year per site. A TMY represents typical conditions, not any particular year or the worst case.[^tmy3]
-* No row-to-row shading. Real utility rows shade each other in the morning and evening, so trackers "backtrack," turning away from the sun and giving up some direct light;[^backtrack] utility arrays with close rows would gain somewhat less than modeled here.
+* Row-to-row shading is modeled only for the direct beam and only for the single axis tracker (part 4); parts 1 to 3 treat every setup as standing alone, and fixed tilt rows are assumed far enough apart not to shade each other.
 * Losses use PVWatts defaults[^pvwatts] rather than measured values, and module degradation is a flat 0.5% per year (assumption).[^a-finance]
 * Electricity is valued at a flat price. Berkeley Lab notes that tracking shifts production toward higher-priced late-afternoon hours,[^lbl-value] which this model does not credit.
 * Residential tracker costs come from a broad consumer-guide range,[^es-trackers] and the extra maintenance costs are assumptions.[^a-om]
@@ -238,3 +268,7 @@ python make_figures.py        # writes figures/*.png
 [^r-dataset]: This folder: [`results/dataset_check.csv`](results/dataset_check.csv), from [`run_energy.py`](run_energy.py).
 [^r-econ]: This folder: [`results/economics.csv`](results/economics.csv), from [`economics.py`](economics.py).
 [^r-ctrl]: This folder: [`results/controller_energy.csv`](results/controller_energy.csv), from [`controller_energy.py`](controller_energy.py), using [`results/hil_dual_axis.csv`](results/hil_dual_axis.csv) and [`results/pointing_error.csv`](results/pointing_error.csv).
+[^a-rows]: Assumptions in `run_rows.py` and `energy_model.single_axis_in_rows`: a ground coverage ratio of 0.35 for the headline numbers (the script sweeps 0.20 to 0.60), and modules mounted in portrait with three bypass blocks, all crossed by the shadow.
+[^r-rows]: [`results/rows.csv`](results/rows.csv), produced by `run_rows.py`.
+[^martinez]: F. Martínez-Moreno, J. Muñoz and E. Lorenzo, "Experimental model to estimate shading losses on PV arrays," *Solar Energy Materials and Solar Cells* 94(12), 2298–2303, 2010. <https://doi.org/10.1016/j.solmat.2010.07.029> Implemented as `pvlib.shading.direct_martinez`; this repository applies its Eq. 6.
+[^shade1d]: K. S. Anderson and A. R. Jensen, "Shaded fraction and backtracking in single-axis trackers on rolling terrain," *J. Renewable Sustainable Energy* 16(2), 023504, 2024. <https://doi.org/10.1063/5.0202220>

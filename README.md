@@ -20,7 +20,7 @@ The field logs from that project were lost, so this repository rebuilds it in tw
 
 **Try it in a browser:** [`web-sim/`](web-sim/) is an interactive version of both parts.
 Open `web-sim/solar-sim.html` to watch four panel setups follow the sun on any day, and to
-replay the twitching controller with adjustable clouds and flicker. Its physics agrees
+replay the twitching controller with adjustable clouds and flicker. It also shows rows of trackers shading each other and backtracking, and has a payback calculator with adjustable prices. Its physics agrees
 with the pvlib model within 0.57% over a full year (see [`web-sim/README.md`](web-sim/README.md)).
 
 ## The answer
@@ -37,7 +37,7 @@ Energy rows: [`energy-yield/results/summary.csv`](energy-yield/results/summary.c
 
 * **Tilting adds a lot of energy, and it added more at the more northern site** (+21% in Des Moines vs +15% in Phoenix).[^r-summary] This fits the textbook result that a fixed panel collects the most energy over a year when tilted at about the site's latitude.[^pvedu-tilt]
 * **Trackers don't pay off on homes.** In Phoenix the extra energy justifies at most $0.57/W extra for a single axis tracker over 25 years,[^r-econ] but trackers add 40 to 100% to a system's cost,[^es-trackers] which is $1.26 to $3.15/W on a $3.15/W home system.[^nrel-bench]
-* **On solar farms, single axis tracking now costs almost the same as fixed racking:** $1.31 vs $1.30 per watt (DC) for US projects built in 2025.[^lbl2026] The extra energy in Phoenix is worth up to $0.14/W,[^r-econ] so it pays off. 96% of new US utility solar capacity in 2025 used single axis trackers.[^lbl2026]
+* **On solar farms, single axis tracking now costs almost the same as fixed racking:** $1.31 vs $1.30 per watt (DC) for US projects built in 2025.[^lbl2026] The extra energy in Phoenix is worth up to $0.14/W for a tracker standing alone,[^r-econ] and about $0.10/W in rows that shade each other and backtrack ([`energy-yield/results/rows.csv`](energy-yield/results/rows.csv), at an assumed 35% ground cover), so it pays off. 96% of new US utility solar capacity in 2025 used single axis trackers.[^lbl2026]
 * **The controller barely changes energy, but it changes wear.** Even the worst light-sensor controller loses under 0.2% of a year's energy, while the unfiltered one moves the motors 12 times as often as a controller that calculates the sun's position.[^r-ctrl] Calculating the sun's position and confirming the panel angle with a tilt sensor (inclinometer) is how commercial trackers are described as pointing, partly because light sensors stop giving usable feedback when clouds cover the sun.[^fredericks]
 
 Full results, assumptions and sources: [`energy-yield/README.md`](energy-yield/README.md).
@@ -207,7 +207,7 @@ with a perfectly aimed panel.[^pvedu-tilt]
 ```
 cd single-axis/tests && make test
 cd dual-axis/tests && make test
-cd energy-yield && pip install -r requirements.txt && python run_energy.py && python economics.py && python controller_energy.py && python make_figures.py
+cd energy-yield && pip install -r requirements.txt && python run_energy.py && python run_rows.py && python economics.py && python controller_energy.py && python make_figures.py
 ```
 
 For the browser simulator's check against pvlib: `cd web-sim && node validate.js` (Node 18+).
@@ -225,7 +225,7 @@ Requires gcc or clang. `common/wokwi-api.h` is from [wokwi/inverter-chip](https:
 ## Roadmap
 
 * Value energy by the hour (time-of-use rates and wholesale prices) instead of a flat price.
-* Add row-to-row shading and backtracking for utility arrays.
+* Shade the diffuse light between rows too (view factors), and put fixed tilt in rows for a like-for-like farm comparison.
 * Drive the Wokwi chip's sun from real hourly NSRDB data instead of the built-in formulas and sliders.
 * Return to the east at night and wait for sunrise.
 * Stop commanding moves when a servo is already at its limit.

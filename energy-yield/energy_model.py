@@ -84,6 +84,38 @@ def orientation_single_axis(solpos, max_angle=60):
     return tilt, azimuth
 
 
+def single_axis_in_rows(solpos, gcr, backtrack, max_angle=60, shade_model="martinez", blocks=3):
+    """Single axis trackers standing in rows, as on a solar farm.
+
+    gcr is the ground coverage ratio: panel width divided by the distance between rows.
+    With backtrack=False every row points at the sun, so near sunrise and sunset each
+    row shades the one behind it. With backtrack=True the rows turn back toward flat
+    just enough that no shadow reaches the next row (Anderson and Mikofski 2020).
+
+    Returns tilt, azimuth, the shaded fraction of each row, and the factor that
+    multiplies the direct beam:
+      "linear"   beam lost in proportion to the shaded area (the optimistic limit)
+      "martinez" Martinez-Moreno et al. 2010: a shaded bypass block stops producing from
+                 the beam. The shadow edge runs along the row, so with modules mounted in
+                 portrait it crosses every block at once (assumption: 3 blocks, all shaded).
+    """
+    zen, az = solpos["apparent_zenith"], solpos["azimuth"]
+    t = pvlib.tracking.singleaxis(zen, az, axis_tilt=0, axis_azimuth=180,
+                                  max_angle=max_angle, backtrack=backtrack, gcr=gcr)
+    theta = t["tracker_theta"]
+    fs = pvlib.shading.shaded_fraction1d(
+        zen, az, axis_azimuth=180, shaded_row_rotation=theta,
+        collector_width=gcr, pitch=1.0, axis_tilt=0)
+    fs = pd.Series(np.asarray(fs), solpos.index).where(zen < 90, 0).fillna(0).clip(0, 1)
+    fs = fs.where(fs > 1e-6, 0)                           # rounding noise is not shade
+    if shade_model == "linear":
+        beam_factor = 1 - fs
+    else:
+        shaded_blocks = np.where(fs > 0, blocks, 0)
+        beam_factor = (1 - fs) * (1 - shaded_blocks / (1 + blocks))
+    return t["surface_tilt"].fillna(0), t["surface_azimuth"].fillna(180), fs, beam_factor
+
+
 def orientation_dual_axis(solpos, pointing_error_deg=0.0):
     """Two axis tracker. With no error the panel faces the sun exactly.
 
@@ -122,7 +154,7 @@ class Result:
         return self.hourly[col].sum() / 1000   # Wh -> kWh (or W/m2 -> kWh/m2)
 
 
-def simulate(name, weather, location, tilt, azimuth, solpos):
+def simulate(name, weather, location, tilt, azimuth, solpos, beam_factor=None):
     # 3. light landing on the panel
     dni_extra = pvlib.irradiance.get_extra_radiation(weather.index)
     airmass = pvlib.atmosphere.get_relative_airmass(solpos["apparent_zenith"])
@@ -131,6 +163,10 @@ def simulate(name, weather, location, tilt, azimuth, solpos):
         weather["dni"], weather["ghi"], weather["dhi"],
         dni_extra=dni_extra, airmass=airmass, albedo=weather["albedo"], model="perez",
     ).fillna(0)
+    if beam_factor is not None:                           # row-to-row shading of the direct beam
+        lost = poa["poa_direct"] * (1 - beam_factor)
+        poa["poa_direct"] = poa["poa_direct"] - lost
+        poa["poa_global"] = poa["poa_global"] - lost
 
     # 4. reflection off the glass: light arriving at a steep angle bounces off
     aoi = pvlib.irradiance.aoi(tilt, azimuth, solpos["apparent_zenith"], solpos["azimuth"])

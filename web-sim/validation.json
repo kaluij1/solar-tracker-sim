@@ -77,5 +77,456 @@
       }
     }
   },
+  "rows": {
+    "rotation": {
+      "Phoenix, AZ": {
+        "gcr": 0.35,
+        "hours_compared": 1238,
+        "max_rotation_error_deg": 0.122,
+        "max_shaded_fraction_error": 0.0031
+      },
+      "Des Moines, IA": {
+        "gcr": 0.35,
+        "hours_compared": 1244,
+        "max_rotation_error_deg": 0.06,
+        "max_shaded_fraction_error": 0.0018
+      }
+    },
+    "annual": [
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.2,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 10547.9,
+        "pvlib_kwh": 10591.4,
+        "diff_vs_pvlib_pct": -0.41
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.2,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 10383.1,
+        "pvlib_kwh": 10423.3,
+        "diff_vs_pvlib_pct": -0.39
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.2,
+        "case": "Backtracking",
+        "browser_kwh": 10510,
+        "pvlib_kwh": 10553.5,
+        "diff_vs_pvlib_pct": -0.41
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.25,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 10472,
+        "pvlib_kwh": 10514.1,
+        "diff_vs_pvlib_pct": -0.4
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.25,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 10070.5,
+        "pvlib_kwh": 10105.2,
+        "diff_vs_pvlib_pct": -0.34
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.25,
+        "case": "Backtracking",
+        "browser_kwh": 10413.3,
+        "pvlib_kwh": 10455.1,
+        "diff_vs_pvlib_pct": -0.4
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.3,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 10369.9,
+        "pvlib_kwh": 10410.3,
+        "diff_vs_pvlib_pct": -0.39
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.3,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 9902.9,
+        "pvlib_kwh": 9934.5,
+        "diff_vs_pvlib_pct": -0.32
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.3,
+        "case": "Backtracking",
+        "browser_kwh": 10283.4,
+        "pvlib_kwh": 10323.1,
+        "diff_vs_pvlib_pct": -0.38
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.35,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 10266.5,
+        "pvlib_kwh": 10305.4,
+        "diff_vs_pvlib_pct": -0.38
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.35,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 9691.5,
+        "pvlib_kwh": 9719.8,
+        "diff_vs_pvlib_pct": -0.29
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.35,
+        "case": "Backtracking",
+        "browser_kwh": 10151,
+        "pvlib_kwh": 10188.7,
+        "diff_vs_pvlib_pct": -0.37
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.4,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 10161,
+        "pvlib_kwh": 10198.4,
+        "diff_vs_pvlib_pct": -0.37
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.4,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 9494.3,
+        "pvlib_kwh": 9519.6,
+        "diff_vs_pvlib_pct": -0.27
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.4,
+        "case": "Backtracking",
+        "browser_kwh": 10016.2,
+        "pvlib_kwh": 10051.9,
+        "diff_vs_pvlib_pct": -0.36
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.45,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 10037.3,
+        "pvlib_kwh": 10073.3,
+        "diff_vs_pvlib_pct": -0.36
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.45,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 9067.9,
+        "pvlib_kwh": 9087.2,
+        "diff_vs_pvlib_pct": -0.21
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.45,
+        "case": "Backtracking",
+        "browser_kwh": 9858.3,
+        "pvlib_kwh": 9892.2,
+        "diff_vs_pvlib_pct": -0.34
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.5,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 9898.3,
+        "pvlib_kwh": 9933.1,
+        "diff_vs_pvlib_pct": -0.35
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.5,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 8810.9,
+        "pvlib_kwh": 8826.8,
+        "diff_vs_pvlib_pct": -0.18
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.5,
+        "case": "Backtracking",
+        "browser_kwh": 9681.1,
+        "pvlib_kwh": 9713.3,
+        "diff_vs_pvlib_pct": -0.33
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.55,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 9757,
+        "pvlib_kwh": 9790.6,
+        "diff_vs_pvlib_pct": -0.34
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.55,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 8534.2,
+        "pvlib_kwh": 8547.1,
+        "diff_vs_pvlib_pct": -0.15
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.55,
+        "case": "Backtracking",
+        "browser_kwh": 9499.5,
+        "pvlib_kwh": 9530,
+        "diff_vs_pvlib_pct": -0.32
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.6,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 9612.2,
+        "pvlib_kwh": 9644.7,
+        "diff_vs_pvlib_pct": -0.34
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.6,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 8201.5,
+        "pvlib_kwh": 8211.2,
+        "diff_vs_pvlib_pct": -0.12
+      },
+      {
+        "site": "Phoenix, AZ",
+        "gcr": 0.6,
+        "case": "Backtracking",
+        "browser_kwh": 9312.8,
+        "pvlib_kwh": 9341.7,
+        "diff_vs_pvlib_pct": -0.31
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.2,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 7496.6,
+        "pvlib_kwh": 7535.6,
+        "diff_vs_pvlib_pct": -0.52
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.2,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 7357.8,
+        "pvlib_kwh": 7394.9,
+        "diff_vs_pvlib_pct": -0.5
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.2,
+        "case": "Backtracking",
+        "browser_kwh": 7438.4,
+        "pvlib_kwh": 7477.1,
+        "diff_vs_pvlib_pct": -0.52
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.25,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 7447.8,
+        "pvlib_kwh": 7486,
+        "diff_vs_pvlib_pct": -0.51
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.25,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 7229.8,
+        "pvlib_kwh": 7264.3,
+        "diff_vs_pvlib_pct": -0.48
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.25,
+        "case": "Backtracking",
+        "browser_kwh": 7372.9,
+        "pvlib_kwh": 7410.5,
+        "diff_vs_pvlib_pct": -0.51
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.3,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 7385,
+        "pvlib_kwh": 7422.1,
+        "diff_vs_pvlib_pct": -0.5
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.3,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 7080,
+        "pvlib_kwh": 7111.7,
+        "diff_vs_pvlib_pct": -0.45
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.3,
+        "case": "Backtracking",
+        "browser_kwh": 7290.2,
+        "pvlib_kwh": 7326.6,
+        "diff_vs_pvlib_pct": -0.5
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.35,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 7315.1,
+        "pvlib_kwh": 7351,
+        "diff_vs_pvlib_pct": -0.49
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.35,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 6921.1,
+        "pvlib_kwh": 6949.7,
+        "diff_vs_pvlib_pct": -0.41
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.35,
+        "case": "Backtracking",
+        "browser_kwh": 7198.9,
+        "pvlib_kwh": 7233.8,
+        "diff_vs_pvlib_pct": -0.48
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.4,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 7240.3,
+        "pvlib_kwh": 7275.1,
+        "diff_vs_pvlib_pct": -0.48
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.4,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 6755.5,
+        "pvlib_kwh": 6781.2,
+        "diff_vs_pvlib_pct": -0.38
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.4,
+        "case": "Backtracking",
+        "browser_kwh": 7101.7,
+        "pvlib_kwh": 7134.9,
+        "diff_vs_pvlib_pct": -0.47
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.45,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 7156.8,
+        "pvlib_kwh": 7190.3,
+        "diff_vs_pvlib_pct": -0.47
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.45,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 6568.3,
+        "pvlib_kwh": 6589.2,
+        "diff_vs_pvlib_pct": -0.32
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.45,
+        "case": "Backtracking",
+        "browser_kwh": 6993.5,
+        "pvlib_kwh": 7025,
+        "diff_vs_pvlib_pct": -0.45
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.5,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 7070,
+        "pvlib_kwh": 7102.2,
+        "diff_vs_pvlib_pct": -0.45
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.5,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 6373.1,
+        "pvlib_kwh": 6392.1,
+        "diff_vs_pvlib_pct": -0.3
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.5,
+        "case": "Backtracking",
+        "browser_kwh": 6880.8,
+        "pvlib_kwh": 6910.6,
+        "diff_vs_pvlib_pct": -0.43
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.55,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 6978.7,
+        "pvlib_kwh": 7009.7,
+        "diff_vs_pvlib_pct": -0.44
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.55,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 6185.7,
+        "pvlib_kwh": 6202,
+        "diff_vs_pvlib_pct": -0.26
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.55,
+        "case": "Backtracking",
+        "browser_kwh": 6761.2,
+        "pvlib_kwh": 6789.3,
+        "diff_vs_pvlib_pct": -0.41
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.6,
+        "case": "True tracking, linear shade loss",
+        "browser_kwh": 6882.1,
+        "pvlib_kwh": 6911.8,
+        "diff_vs_pvlib_pct": -0.43
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.6,
+        "case": "True tracking, bypass block loss",
+        "browser_kwh": 5974.5,
+        "pvlib_kwh": 5987.9,
+        "diff_vs_pvlib_pct": -0.22
+      },
+      {
+        "site": "Des Moines, IA",
+        "gcr": 0.6,
+        "case": "Backtracking",
+        "browser_kwh": 6633.4,
+        "pvlib_kwh": 6659.9,
+        "diff_vs_pvlib_pct": -0.4
+      }
+    ],
+    "max_abs_diff_pct": 0.52
+  },
   "max_abs_diff_pct": 0.57
 }

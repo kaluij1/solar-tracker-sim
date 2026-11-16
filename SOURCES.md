@@ -23,6 +23,8 @@ documents below are cited under the name they were published with.
 | 5 | J. H. Kim, A. D. Mills, R. Wiser et al., "Project developer options to enhance the value of solar electricity as solar and storage penetrations increase," Berkeley Lab, Sept. 2021. <https://emp.lbl.gov/news/project-developer-options-enhance-value-solar> | Tracking shifts "solar production to higher-priced hours in the mornings and, especially, in late afternoons to evening" |
 | 6 | The Fredericks Company, "AN 1004: Inclinometers for Solar Tracking Systems." <https://www.frederickscompany.com/application-notes/inclinometers-for-solar-tracking-systems/> | Trackers point using an algorithm ("The algorithm tells the system where to point") and confirm with an inclinometer; photodiodes may give no "usable position feedback" under clouds |
 | 7 | K. Anderson and M. Mikofski, "Slope-Aware Backtracking for Single-Axis Trackers," NREL/TP-5K00-76626, 2020. <https://doi.org/10.2172/1660126> | What backtracking is, and that it gives up some direct sunlight to avoid row-to-row shading |
+| 36 | K. S. Anderson and A. R. Jensen, "Shaded fraction and backtracking in single-axis trackers on rolling terrain," *J. Renewable Sustainable Energy* 16(2), 023504, 2024. <https://doi.org/10.1063/5.0202220> | Shaded fraction of a tracker row (Eq. 12, via `pvlib.shading.shaded_fraction1d`) |
+| 37 | F. Martínez-Moreno, J. Muñoz and E. Lorenzo, "Experimental model to estimate shading losses on PV arrays," *Solar Energy Materials and Solar Cells* 94(12), 2298–2303, 2010. <https://doi.org/10.1016/j.solmat.2010.07.029> | Power lost when part of an array is shaded, counted by bypass blocks (Eq. 6, as in `pvlib.shading.direct_martinez`) |
 | 34 | S. Chunduri, "Dual-Axis Trackers Remain A Niche In Utility Applications," TaiyangNews, Apr. 2, 2026. <https://taiyangnews.info/technology/dual-axis-trackers-remain-a-niche-in-utility-applications> | Dual axis trackers are "not well accepted in commercial utility-scale deployments" because of "complex mechanical architecture and heavy structural requirements" (cited on the case study page) |
 
 ## Solar physics and modeling methods
@@ -76,11 +78,12 @@ documents below are cited under the name they were published with.
 | Best tilt and the tilt curve | [`energy-yield/results/tilt_sweep.csv`](energy-yield/results/tilt_sweep.csv) | `energy-yield/run_energy.py` |
 | Results across weather data versions | [`energy-yield/results/dataset_check.csv`](energy-yield/results/dataset_check.csv) | `energy-yield/run_energy.py` |
 | Energy lost vs pointing error | [`energy-yield/results/pointing_error.csv`](energy-yield/results/pointing_error.csv) | `energy-yield/run_energy.py` |
+| Single axis trackers in rows: shading, backtracking, farm break-even | [`energy-yield/results/rows.csv`](energy-yield/results/rows.csv) | `energy-yield/run_rows.py` |
 | Break-even premiums and payback | [`energy-yield/results/economics.csv`](energy-yield/results/economics.csv) | `energy-yield/economics.py` |
 | Controller pointing error, moves, reversals, energy cost | [`energy-yield/results/controller_energy.csv`](energy-yield/results/controller_energy.csv), [`energy-yield/results/hil_dual_axis.csv`](energy-yield/results/hil_dual_axis.csv) | `dual-axis/tests` (`--csv`), `energy-yield/controller_energy.py` |
 | Single axis controller results and noise | Output of `make test` | `single-axis/tests/closed_loop_test.c` |
 | Dual axis controller results | Output of `make test` | `dual-axis/tests/closed_loop_test.c` |
-| Browser simulator agrees with pvlib (annual energy within 0.57%, sun position within 0.03°) | [`web-sim/validation.json`](web-sim/validation.json) | `web-sim/validate.js` |
+| Browser simulator agrees with pvlib (annual energy within 0.57%, sun position within 0.03°; trackers in rows within 0.52% and 0.12° of rotation) | [`web-sim/validation.json`](web-sim/validation.json) | `web-sim/validate.js` |
 
 ## Personal account
 

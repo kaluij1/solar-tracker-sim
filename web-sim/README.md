@@ -7,6 +7,12 @@ Open `solar-sim.html` in any browser. No install, no server.
   the weather is the site's hourly NSRDB typical-year data,[^nsrdb] and four setups (flat,
   fixed at the best tilt, single axis, dual axis) turn and produce power. A full year is
   also computed in the browser, about 0.3 s, and shown next to the pvlib results.
+- **Solar farm:** a side view of tracker rows shading each other, with a switch between
+  pointing at the sun and backtracking, an adjustable row spacing, and a full year computed
+  for each.
+- **Payback:** how much extra a tracker can cost and still pay for itself, with sliders for
+  electricity price, tracker cost, upkeep, discount rate and system life. The starting
+  values are the ones in `energy-yield/economics.py`.
 - **Controller replay:** the single axis tracker's sensors, divider wall and servo, ported
   from the Wokwi chip (`single-axis/wokwi`). Turn up clouds and flicker and compare the
   original controller, the moving average with a deadband, and a calculated sun position.
@@ -21,6 +27,7 @@ Open `solar-sim.html` in any browser. No install, no server.
 | `weather-data.js` | Hourly weather for both sites, plus module, inverter and loss parameters, exported from the pvlib model |
 | `validate.js` | Checks this model against pvlib and writes `validation.json` |
 | `check-sun.json` | pvlib sun positions (NREL SPA) used by `validate.js` |
+| `check-rows.json`, `export_rows_reference.py` | pvlib tracker angles, shaded fractions and yearly energy for trackers in rows, and the script that writes them |
 
 ## The model, step by step
 
@@ -31,6 +38,9 @@ Open `solar-sim.html` in any browser. No install, no server.
 3. **Light on the panel:** direct beam, Perez sky diffuse,[^perez] ground reflection.
 4. **Reflection losses:** physical incidence angle model[^desoto] and Marion's diffuse
    correction,[^marion] with the table exported from pvlib.
+   For trackers in rows: the backtracking angle of Anderson and Mikofski[^bt] and the shaded
+   fraction of Anderson and Jensen;[^aj] shade loss either in proportion to area or by
+   bypass block (Martínez-Moreno et al.).[^mm]
 5. **Cell temperature:** Sandia (SAPM) model, open rack glass/polymer.[^sapm]
 6. **Power:** PVWatts DC with the module's own temperature coefficient, 14.08% losses, and
    the PVWatts inverter, clipped at 3,850 W.[^pvwatts]
@@ -51,6 +61,9 @@ Results (`validation.json`):
 |---|---|
 | Sun position vs NREL SPA, every 5th daylight hour | max error 0.024° zenith, 0.028° azimuth |
 | Annual energy vs full pvlib model, 2 sites × 4 setups | all within 0.57% (the browser model reads slightly low) |
+| Trackers in rows: rotation angle vs `pvlib.tracking.singleaxis`, with and without backtracking | max error 0.12° |
+| Trackers in rows: shaded fraction vs `pvlib.shading.shaded_fraction1d` | max error 0.003 |
+| Trackers in rows: annual energy vs pvlib, 2 sites × 9 row spacings × 3 cases | all 54 within 0.52% |
 | Tracking gain over fixed tilt, Phoenix | single axis 24.8% (pvlib 25.0%), dual axis 39.6% (pvlib 39.6%) |
 | Tracking gain over fixed tilt, Des Moines | single axis 17.6% (pvlib 17.8%), dual axis 34.5% (pvlib 34.7%) |
 
@@ -71,3 +84,6 @@ Source numbers match [SOURCES.md](../SOURCES.md).
 [^sapm]: SOURCES.md #13.
 [^pvwatts]: SOURCES.md #16.
 [^sandia]: SOURCES.md #15.
+[^bt]: SOURCES.md #7.
+[^aj]: SOURCES.md #36.
+[^mm]: SOURCES.md #37.

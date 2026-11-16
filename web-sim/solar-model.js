@@ -3,7 +3,8 @@
  *
  * Same chain, same equations, same real hourly weather (NSRDB typical year):
  *   1. sun position          NOAA solar calculator equations (Meeus); pvlib uses NREL SPA
- *   2. panel orientation     flat, fixed tilt, single axis (N-S, +/-60 deg, no backtracking), dual axis
+ *   2. panel orientation     flat, fixed tilt, single axis (N-S, +/-60 deg), dual axis
+ *      2b. trackers in rows  row-to-row beam shading, with or without backtracking
  *   3. light on the panel    beam + Perez 1990 sky diffuse + ground reflection (as pvlib.irradiance)
  *   4. glass reflection      physical IAM (De Soto 2006) and Marion 2017 diffuse factors (table from pvlib)
  *   5. cell temperature      Sandia Array Performance Model, open rack glass/polymer
@@ -84,6 +85,33 @@
     return { tilt: Math.min(sun.zenith, 90), azimuth: sun.azimuth };   // dual axis
   }
 
+  /* ---------- 2b. single axis trackers standing in rows ---------- */
+  // gcr: ground coverage ratio = panel width / distance between rows.
+  // strategy "true": every row points at the sun, so rows shade each other when the sun is low.
+  // strategy "backtrack": rows turn back toward flat just enough to keep the next row unshaded
+  //   (Anderson and Mikofski 2020, Eq. 14, as in pvlib.tracking.singleaxis).
+  // Shaded fraction: Anderson and Jensen 2024, Eq. 12, flat ground (pvlib.shading.shaded_fraction1d).
+  // shadeModel "linear": beam lost in proportion to the shaded area.
+  // shadeModel "blocks": Martinez-Moreno et al. 2010, Eq. 6, with all 3 bypass blocks shaded
+  //   (modules in portrait: the shadow edge runs along the row and crosses every block).
+  var ROW_BLOCKS = 3;
+  function rowTracker(sun, gcr, strategy, shadeModel) {
+    if (sun.zenith >= 90) return { tilt: 0, azimuth: 180, rotation: 0, ideal: 0, shaded: 0, beamFactor: 1 };
+    var east = sind(sun.zenith) * sind(sun.azimuth), up = cosd(sun.zenith);
+    var ideal = Math.atan2(east, up) * R2D, theta = ideal;
+    if (strategy === "backtrack") {
+      var temp = Math.abs(cosd(ideal)) / gcr;
+      if (temp < 1) theta = ideal - (ideal >= 0 ? 1 : -1) * Math.acos(temp) * R2D;
+    }
+    theta = Math.max(-60, Math.min(60, theta));
+    var c = Math.max(1e-6, Math.abs(cosd(theta - ideal)));
+    var fs = 1 - cosd(ideal) / (gcr * c);
+    fs = fs < 1e-6 ? 0 : Math.min(1, fs);
+    var bf = 1 - fs;
+    if (shadeModel === "blocks" && fs > 0) bf *= 1 - ROW_BLOCKS / (1 + ROW_BLOCKS);
+    return { tilt: Math.abs(theta), azimuth: theta >= 0 ? 90 : 270, rotation: theta, ideal: ideal, shaded: fs, beamFactor: bf };
+  }
+
   /* ---------- 3. light on the panel ---------- */
   var F1C = [[-0.008, 0.588, -0.062], [0.13, 0.683, -0.151], [0.33, 0.487, -0.221], [0.568, 0.187, -0.295],
              [0.873, -0.392, -0.362], [1.132, -1.237, -0.412], [1.06, -1.6, -0.359], [0.678, -0.327, -0.25]];
@@ -136,7 +164,7 @@
     var zen = sun.zenith, tilt = o.tilt, az = o.azimuth;
     var ca = cosAoi(tilt, az, zen, sun.azimuth);
     var aoi = Math.acos(Math.max(-1, Math.min(1, ca))) * R2D;
-    var direct = Math.max(0, w.dni * ca);
+    var direct = Math.max(0, w.dni * ca) * (o.beamFactor == null ? 1 : o.beamFactor);
     var sky = perezSky(tilt, az, w.dhi, w.dni, extraRadiation(doy), zen, sun.azimuth, airmass(zen));
     var ground = w.ghi * w.albedo * (1 - cosd(tilt)) / 2;
     var poa = direct + sky + ground;
@@ -195,7 +223,31 @@
     return { totals: totals, monthly: monthly };
   }
 
-  var api = { sunPosition: sunPosition, orientation: orientation, step: step, weatherAt: weatherAt,
+  // A full year for single axis trackers in rows: the three cases of energy-yield/run_rows.py
+  var ROW_CASES = {
+    "True tracking, linear shade loss": ["true", "linear"],
+    "True tracking, bypass block loss": ["true", "blocks"],
+    "Backtracking": ["backtrack", "linear"]
+  };
+  function annualRows(site, P, gcr) {
+    var totals = {}, shadedHours = {}, daylight = 0, k;
+    for (k in ROW_CASES) { totals[k] = 0; shadedHours[k] = 0; }
+    for (var i = 0; i < 8760; i++) {
+      var sun = sunPosition(utcMsFor(site, i + 0.5), site.lat, site.lon);
+      if (sun.zenith >= 90) continue;
+      daylight++;
+      var w = weatherAt(site, i), doy = Math.floor(i / 24) + 1;
+      for (k in ROW_CASES) {
+        var o = rowTracker(sun, gcr, ROW_CASES[k][0], ROW_CASES[k][1]);
+        totals[k] += step(w, sun, o, doy, P).pac / 1000;
+        if (o.shaded > 0) shadedHours[k]++;
+      }
+    }
+    return { totals: totals, shadedHours: shadedHours, daylightHours: daylight };
+  }
+
+  var api = { rowTracker: rowTracker, annualRows: annualRows, ROW_CASES: ROW_CASES,
+               sunPosition: sunPosition, orientation: orientation, step: step, weatherAt: weatherAt,
               weatherAtHour: weatherAtHour, utcMsFor: utcMsFor, annual: annual, SETUPS: SETUPS,
               iamPhysical: iamPhysical, perezSky: perezSky, airmass: airmass, extraRadiation: extraRadiation };
   if (typeof module !== "undefined" && module.exports) module.exports = api;

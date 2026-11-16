@@ -2,6 +2,7 @@
 //   node validate.js
 // 1. Sun position vs NREL SPA (pvlib), sampled hourly through the year.
 // 2. Annual AC energy for every site and setup vs pvlib's full model and its PVWatts cross-check.
+// 3. Trackers in rows (shading and backtracking) vs pvlib, from check-rows.json.
 // Writes validation.json, which the web page displays.
 const fs = require("fs");
 const path = require("path");
@@ -44,7 +45,31 @@ for (const [name, site] of Object.entries(P.sites)) {
     dual_axis_vs_fixed_pvlib_pct: +(100 * (site.pvlib_annual_kwh["Dual axis"] / site.pvlib_annual_kwh["Fixed, best tilt"] - 1)).toFixed(1),
   };
 }
+// 3. trackers in rows: rotation angle and shaded fraction hour by hour, and annual energy
+const rows = JSON.parse(fs.readFileSync(path.join(__dirname, "check-rows.json"), "utf8"));
+out.rows = { rotation: {}, annual: [] };
+for (const name of Object.keys(P.sites)) {
+  const site = P.sites[name], ref = rows[name];
+  let maxT = 0, maxF = 0, n = 0;
+  for (const [i, bt, theta, shaded] of ref.samples) {
+    const s = M.sunPosition(M.utcMsFor(site, i + 0.5), site.lat, site.lon);
+    const o = M.rowTracker(s, ref.gcr, bt ? "backtrack" : "true", "linear");
+    maxT = Math.max(maxT, Math.abs(-o.rotation - theta));   // pvlib counts west as positive
+    maxF = Math.max(maxF, Math.abs(o.shaded - shaded)); n++;
+  }
+  out.rows.rotation[name] = { gcr: ref.gcr, hours_compared: n, max_rotation_error_deg: +maxT.toFixed(3), max_shaded_fraction_error: +maxF.toFixed(4) };
+}
+const rowCache = {};
+for (const r of rows.annual) {
+  const key = r.site + r.gcr;
+  if (!rowCache[key]) rowCache[key] = M.annualRows(P.sites[r.site], P, r.gcr);
+  const js = rowCache[key].totals[r.case];
+  out.rows.annual.push({ site: r.site, gcr: r.gcr, case: r.case, browser_kwh: +js.toFixed(1), pvlib_kwh: r.pvlib_kwh,
+                         diff_vs_pvlib_pct: +(100 * (js / r.pvlib_kwh - 1)).toFixed(2) });
+}
+out.rows.max_abs_diff_pct = +Math.max(...out.rows.annual.map(r => Math.abs(r.diff_vs_pvlib_pct))).toFixed(2);
+
 const all = Object.values(out.annual).flatMap(s => M.SETUPS.map(k => Math.abs(s[k].diff_vs_pvlib_pct)));
 out.max_abs_diff_pct = +Math.max(...all).toFixed(2);
 fs.writeFileSync(path.join(__dirname, "validation.json"), JSON.stringify(out, null, 2));
-console.log(JSON.stringify(out, null, 2));
+console.log(JSON.stringify({ sun: out.sun, max_abs_diff_pct: out.max_abs_diff_pct, rows_rotation: out.rows.rotation, rows_max_abs_diff_pct: out.rows.max_abs_diff_pct }, null, 2));
