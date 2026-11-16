@@ -274,6 +274,8 @@ python run_rows.py            # single axis trackers in rows: shading and backtr
 python validate_measured.py    # model vs measured output of a real array (downloads 114 MB)
 python economics.py           # break-even premiums and payback
 python cost_check.py          # farm break-even vs the three published tracker premiums
+python fetch_caiso_prices.py  # (on a machine that can reach CAISO OASIS) 2025 hourly prices, SP15 hub
+python run_value.py           # value at hourly prices: Daggett, CA weather with 2025 CAISO prices (work in progress)
 python controller_energy.py   # combines the controller simulation with the energy model
 python make_figures.py        # writes figures/*.png
 ```
