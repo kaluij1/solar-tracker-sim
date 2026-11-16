@@ -1,6 +1,6 @@
 # Sources
 
-Every claim in this repository and its case study is backed by one of three things:
+Every claim in this repository and in its case study on my website is backed by one of three things:
 
 1. **A published source** listed below.
 2. **A result from this repository,** cited with the file that holds it (table at the bottom).
@@ -23,6 +23,7 @@ documents below are cited under the name they were published with.
 | 5 | J. H. Kim, A. D. Mills, R. Wiser et al., "Project developer options to enhance the value of solar electricity as solar and storage penetrations increase," Berkeley Lab, Sept. 2021. <https://emp.lbl.gov/news/project-developer-options-enhance-value-solar> | Tracking shifts "solar production to higher-priced hours in the mornings and, especially, in late afternoons to evening" |
 | 6 | The Fredericks Company, "AN 1004: Inclinometers for Solar Tracking Systems." <https://www.frederickscompany.com/application-notes/inclinometers-for-solar-tracking-systems/> | Trackers point using an algorithm ("The algorithm tells the system where to point") and confirm with an inclinometer; photodiodes may give no "usable position feedback" under clouds |
 | 7 | K. Anderson and M. Mikofski, "Slope-Aware Backtracking for Single-Axis Trackers," NREL/TP-5K00-76626, 2020. <https://doi.org/10.2172/1660126> | What backtracking is, and that it gives up some direct sunlight to avoid row-to-row shading |
+| 34 | S. Chunduri, "Dual-Axis Trackers Remain A Niche In Utility Applications," TaiyangNews, Apr. 2, 2026. <https://taiyangnews.info/technology/dual-axis-trackers-remain-a-niche-in-utility-applications> | Dual axis trackers are "not well accepted in commercial utility-scale deployments" because of "complex mechanical architecture and heavy structural requirements" (cited on the case study page) |
 
 ## Solar physics and modeling methods
 
