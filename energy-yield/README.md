@@ -33,7 +33,7 @@ Energy rows: [`results/summary.csv`](results/summary.csv). Verdicts: [`results/e
 * **Tilting adds 15 to 21% over lying flat,** and the gain was larger at the more northern site.[^r-summary]
 * **For homes, trackers don't pay off.** In Phoenix the extra energy justifies at most $0.57/W extra for single axis (or $1.05/W for dual axis) over 25 years,[^r-econ] while trackers add 40 to 100% to a system's cost,[^es-trackers] or $1.26 to $3.15/W on a $3.15/W home system.[^nrel-bench]
 * **For solar farms, the extra energy roughly breaks even with the tracker's cost.** In realistic rows that backtrack (part 4), the extra energy in Phoenix is worth $0.10/W over 25 years.[^r-rows] SEIA and Wood Mackenzie's like-for-like 2026 price puts single axis tracking at $0.11/W more than fixed tilt.[^seia-q3] Phoenix rows break even in only 3 of 9 combinations of contract price and discount rate, and Des Moines in none.[^r-cost] Berkeley Lab's much lower $0.01/W compares different projects and does not control for size or location.[^lbl2026] See "Which tracker price?" below.
-* **That leaves a puzzle.** 96% of new US utility solar capacity in 2025 used single axis trackers.[^lbl2026] When a model disagrees with an industry, the model is probably missing something. The likeliest gap is timing: this model values every kWh the same, but tracking shifts output toward higher-priced morning and late-afternoon hours.[^lbl-value] It also compares tracker rows against fixed panels with no rows, and leaves out tax credits and bifacial panels. Valuing energy by the hour is the next step.
+* **That left a puzzle, which part 6 answers.** 96% of new US utility solar capacity in 2025 used single axis trackers.[^lbl2026] When a model disagrees with an industry, the model is probably missing something. The likeliest gap is timing: this model values every kWh the same, but tracking shifts output toward higher-priced morning and late-afternoon hours.[^lbl-value] It also compares tracker rows against fixed panels with no rows, and leaves out tax credits and bifacial panels. Pricing every hour with 2025 California prices (part 6) shows trackers in rows add 19% more energy but 34% more revenue.
 * **The controller barely matters for energy, but it matters for wear.** Even the worst light-sensor controller loses under 0.2% of a year's energy, but the unfiltered one moves the motors 12 times as often as a controller that calculates the sun's position.[^r-ctrl]
 
 ## System
@@ -265,6 +265,38 @@ What this shows:[^r-measured]
   satellite wind speed, so test C assumes 1 m/s. Test A uses the measured sunlight directly, with no correction for reflection off the glass. Measured minutes with impossible sensor
   values are dropped, and only complete hours or half hours are compared.
 
+## 6. Value, not energy: pricing every hour
+
+Parts 2 and 4 value every kWh the same. In California that is no longer true. `run_value.py`
+prices each hour of output with CAISO's 2025 day-ahead prices at the SP15 trading hub
+(Southern California),[^caiso] downloaded with `fetch_caiso_prices.py` through the gridstatus
+library,[^gridstatus] and pairs them with typical-year weather for Daggett, California, a Mojave
+Desert site in the same price zone.[^nsrdb] Fixed panels use the best tilt for Daggett (34°).
+
+**The 2025 price pattern.** The average was $32/MWh, but only $10 to $12 between 9 am and
+2 pm (Pacific standard time), and about $50 at 6 to 7 pm. Prices were below zero in 11% of
+hours, and 31% of a fixed south-facing panel's energy came in those hours.[^r-value]
+
+| Setup (vs fixed, facing south) | Extra energy | Extra market revenue | Capture price ($/MWh) | Break-even: flat $30/MWh | Break-even: 2025 market | Break-even: timing-adjusted contract |
+|---|---|---|---|---|---|---|
+| Fixed, best tilt, facing south | | | $12.45 | | | |
+| Single axis, standing alone | +26% | +58% | $15.59 (+25%) | $0.151/W | $0.138/W | $0.367/W |
+| Single axis in rows, backtracking | +19% | +34% | $14.04 (+13%) | $0.105/W | $0.072/W | $0.209/W |
+| Dual axis, standing alone | +41% | +79% | $15.82 (+27%) | $0.255/W | $0.199/W | $0.515/W |
+| Fixed, best tilt, facing west | −21% | −10% | $14.32 (+15%) | −$0.169/W | −$0.051/W | −$0.089/W |
+
+The capture price is market revenue divided by energy. The timing-adjusted contract is an
+illustration, not a real contract term:[^a-timing] fixed output keeps $30/MWh and every other
+setup is paid in proportion to its capture price. Hourly profiles are in
+[`results/value_by_hour.csv`](results/value_by_hour.csv).[^r-value]
+
+What this shows:
+
+* **Timing is real.** In farm rows, trackers add 19% more energy but 34% more market revenue, because their extra output arrives in the morning and late afternoon, outside the cheapest midday hours. This matches Berkeley Lab's description of tracking shifting output to higher-priced hours.[^lbl-value]
+* **Facing west is not a substitute.** It raises the value per MWh by 15%, but loses 21% of the energy, so revenue falls.
+* **Whether trackers pay depends on how the farm is paid.** Against the $0.11/W like-for-like price,[^seia-q3] tracker rows are roughly even on a flat contract ($0.105/W), fall short selling at 2025 market prices ($0.072/W, because midday solar of every kind earned little: fixed panels captured only $12.45/MWh), and clear it easily on the timing-adjusted contract ($0.209/W).
+* **Limits:** one year of prices at one hub, day-ahead only; typical-year weather matched to 2025 prices by date and hour, not by actual cloudy days;[^a-timing] no curtailment orders, storage or tax credits.
+
 ## Running it
 
 ```
@@ -275,7 +307,7 @@ python validate_measured.py    # model vs measured output of a real array (downl
 python economics.py           # break-even premiums and payback
 python cost_check.py          # farm break-even vs the three published tracker premiums
 python fetch_caiso_prices.py  # (on a machine that can reach CAISO OASIS) 2025 hourly prices, SP15 hub
-python run_value.py           # value at hourly prices: Daggett, CA weather with 2025 CAISO prices (work in progress)
+python run_value.py           # value at hourly prices: Daggett, CA weather with 2025 CAISO prices
 python controller_energy.py   # combines the controller simulation with the energy model
 python make_figures.py        # writes figures/*.png
 ```
@@ -287,7 +319,7 @@ python make_figures.py        # writes figures/*.png
 * One typical year per site. A TMY represents typical conditions, not any particular year or the worst case.[^tmy3]
 * Row-to-row shading is modeled only for the direct beam and only for the single axis tracker (part 4); parts 1 to 3 treat every setup as standing alone, and fixed tilt rows are assumed far enough apart not to shade each other.
 * Losses use PVWatts defaults[^pvwatts] rather than measured values, and module degradation is a flat 0.5% per year (assumption).[^a-finance]
-* Electricity is valued at a flat price. Berkeley Lab notes that tracking shifts production toward higher-priced late-afternoon hours,[^lbl-value] which this model does not credit.
+* Parts 2 and 4 value electricity at a flat price; part 6 uses one year of hourly prices at one hub, paired with typical-year weather.
 * No tax credits and no bifacial (two-sided) panels; both could change the farm verdict.
 * Residential tracker costs come from a broad consumer-guide range,[^es-trackers] and the extra maintenance costs are assumptions.[^a-om]
 * The controller comparison uses a time-lapse day, a 45° latitude sun path, and modeled cloud and flicker noise (see the main README).
@@ -333,3 +365,7 @@ python make_figures.py        # writes figures/*.png
 [^r-measured]: [`results/measured_validation.csv`](results/measured_validation.csv), produced by `validate_measured.py`.
 [^seia-q3]: SEIA and Wood Mackenzie, *US Solar Market Insight Q3 2026*, executive summary, Sept. 2026. <https://tecsol-quotidien.fr/wp-content/uploads/2026/09/USSMI_Q3_2026_ES.pdf> Q2 2026 utility-scale system prices: fixed-tilt "$0.95/Wdc", single-axis tracking "$1.06/Wdc", from a "bottoms-up modeling methodology". (SOURCES.md #40)
 [^r-cost]: [`results/cost_check.csv`](results/cost_check.csv), produced by `cost_check.py`.
+[^caiso]: California ISO, OASIS: 2025 day-ahead hourly LMPs at TH_SP15_GEN-APND. <http://oasis.caiso.com>. Copy in [`data/caiso_sp15_dam_2025.csv`](data/caiso_sp15_dam_2025.csv). (SOURCES.md #41)
+[^gridstatus]: gridstatus, open source Python library, version 0.37. <https://opensource.gridstatus.io> (SOURCES.md #42)
+[^r-value]: [`results/value.csv`](results/value.csv) and [`results/value_by_hour.csv`](results/value_by_hour.csv), produced by `run_value.py`.
+[^a-timing]: Assumptions in part 6: the timing-adjusted contract (fixed output at $30/MWh, other setups paid in proportion to their capture price) is an illustration of how buyers value timing, not a real contract term; and 2025 prices are matched to typical-year weather by month, day and hour.
