@@ -1,20 +1,40 @@
-# Solar Tracker Simulation
+# Is Solar Tracking Worth It?
 
-A hardware-in-the-loop simulation of a light-seeking solar tracker. Real Arduino
-firmware runs on an emulated ATmega328 in [Wokwi](https://wokwi.com), and a custom
-simulated chip models the physical world around it: the sun, the servos, the
-photoresistors, clouds, and reflections.
+**From a twitching student prototype to a question the solar industry actually asks.**
 
-This rebuilds the control system from a dual axis solar tracker I worked on with a
-team of five at St. Olaf. The original field logs were lost, so this project
-recreates the problem we hit outdoors (servo twitching caused by sensor noise) and
-the fix (moving average plus a noise-sized deadband) in a setting where every
-variable can be measured.
+In my second year at St. Olaf, I worked on a team of five building a dual axis solar
+tracker: four photoresistors, two servos, and an Arduino that turned the panel toward
+the brighter side. It worked under a lamp, then twitched constantly outdoors, because
+cloud and reflection noise was bigger than the threshold we had tuned indoors. We fixed
+it with a moving average and a deadband sized from measured noise.
 
-| Version | Folder | What it adds |
+The field logs from that project were lost, so this repository rebuilds it in two parts:
+
+1. **The controller,** as a hardware-in-the-loop simulation. Real Arduino firmware runs on an emulated ATmega328 in [Wokwi](https://wokwi.com), against a custom simulated chip that models the sun, the servos, the photoresistors, clouds and reflections.
+2. **The bigger question,** as an energy and economics model in [pvlib](https://pvlib-python.readthedocs.io): how much extra energy do tilt and tracking produce in a sunny desert and in the cloudier Midwest, and does that extra energy pay for the tracker, for a home and for a solar farm?
+
+## The answer
+
+| | Phoenix, AZ | Des Moines, IA |
 |---|---|---|
-| v1 | [`single-axis/`](single-axis) | One servo, two LDRs, manual sun slider |
-| v2 | [`dual-axis/`](dual-axis) | Pan and tilt servos, four LDRs, a real sun path by latitude and season |
+| Fixed tilt vs flat | +15% | +21% |
+| Single axis tracking vs fixed tilt | +25% | +18% |
+| Dual axis tracking vs fixed tilt | +40% | +35% |
+| Tracker on a home | Does not pay off | Does not pay off |
+| Single axis tracker on a solar farm | Pays off at 2025 prices | Only if very cheap |
+
+* **Tilt is nearly free energy,** and matters more the farther you go from the equator.
+* **Trackers don't pay off on homes.** In Phoenix the extra energy justifies at most $0.57/W extra for a single axis tracker over 25 years, but home trackers add $1.26 to $3.15/W.
+* **On solar farms, single axis tracking now costs almost the same as fixed racking** ($1.31 vs $1.30 per watt in 2025, per Berkeley Lab), so even a modest energy gain pays for it. 96% of new US utility solar capacity in 2025 used single axis trackers.
+* **The controller barely changes energy, but it changes wear.** Even the worst light-sensor controller loses under 0.2% of a year's energy. The unfiltered one, though, moves the motors 12 times as often as a controller that calculates the sun's position, which is how commercial trackers work.
+
+Full results, assumptions and sources: [`energy-yield/README.md`](energy-yield/README.md).
+
+| Part | Folder | What it does |
+|---|---|---|
+| Controller v1 | [`single-axis/`](single-axis) | One servo, two LDRs, manual sun slider |
+| Controller v2 | [`dual-axis/`](dual-axis) | Pan and tilt servos, four LDRs, a real sun path, and a calculated sun position controller for comparison |
+| Energy and economics | [`energy-yield/`](energy-yield) | pvlib model of a 4.8 kW system: flat, fixed, single and dual axis, two sites, payback, and controller cost |
 
 ```
 solar-tracker-sim/
@@ -23,9 +43,19 @@ solar-tracker-sim/
 │   └── tests/      native closed-loop test
 ├── dual-axis/
 │   ├── wokwi/      sketch.ino, diagram.json, sun-sensor-head-2d chip
-│   └── tests/      native closed-loop test
+│   └── tests/      native closed-loop test (light sensors vs calculated sun position)
+├── energy-yield/
+│   ├── data/       NSRDB typical-year weather for Phoenix and Des Moines
+│   ├── *.py        energy model, economics, controller cost, figures
+│   ├── results/    CSV outputs
+│   └── figures/    charts
 └── common/         wokwi-api.h (used by the tests)
 ```
+
+# Part 1: The controller
+
+The rest of this page covers the hardware-in-the-loop controller simulation. Part 2,
+the energy and economics model, lives in [`energy-yield/`](energy-yield).
 
 ## How it works
 
@@ -138,11 +168,13 @@ with a perfectly aimed panel.
 | Equinox, clear, raw threshold | 248 / 111 | 1 / 2 | 1.6° | 2.0° | 100.0% |
 | Equinox, 30% cloud, 10% flicker, raw | 1,525 / 1,441 | 355 / 394 | 2.2° | 3.9° | 99.9% |
 | Equinox, 30% cloud, 10% flicker, filtered | 284 / 125 | 5 / 2 | 3.9° | 6.5° | 99.7% |
+| Equinox, 30% cloud, 10% flicker, calculated sun position | 171 / 81 | 1 / 2 | 0.3° | 0.6° | 100.0% |
 | Summer solstice, clear, raw | 1,330 / 173 | 1 / 3 | 6.0° | 22.1° | 98.0% |
 | Winter solstice, clear, raw | 144 / 69 | 1 / 2 | 1.5° | 2.0° | 100.0% |
 
 * The twitching problem shows up on both axes, and the filter fixes both (749 total reversals down to 7).
-* Pointing errors of a few degrees cost almost nothing in energy, because cos(4°) is still 99.8%. The real cost of twitching is servo wear and power, not lost sunlight.
+* Pointing errors of a few degrees cost almost nothing in energy, because cos(4°) is still 99.8%. The real cost of twitching is servo wear and power, not lost sunlight. [`energy-yield/`](energy-yield) turns these errors into a year of lost energy: at most 0.17%.
+* **Calculated sun position** is the comparison case. Instead of reading the light sensors, the test computes where the sun is from the time of day (the way commercial trackers work) and points there. Clouds can't fool it: 0.3° average error and 252 moves, against 2,966 moves for the raw light-sensor controller.
 * In summer the sun rises north of east, past the pan servo's 180° limit. The panel sits at its limit until the sun comes back into range, which is where the 22° worst case comes from. The sketch also keeps commanding moves it can't make while pinned there, which inflates the pan move count.
 
 ## Running it in Wokwi
@@ -152,11 +184,12 @@ with a perfectly aimed panel.
 3. Copy the four files from that version's `wokwi/` folder into the matching tabs: `sketch.ino`, `diagram.json`, and the chip's `.chip.json` and `.chip.c`.
 4. Press play. Use the chip's sliders to move the sun and add clouds or flicker. The Serial Monitor shows readings, servo angles, and reversal counts, and the Chips Console shows the chip's own view of the pointing error.
 
-## Running the tests
+## Running the tests and the energy model
 
 ```
 cd single-axis/tests && make test
 cd dual-axis/tests && make test
+cd energy-yield && pip install -r requirements.txt && python run_energy.py && python economics.py && python controller_energy.py && python make_figures.py
 ```
 
 Requires gcc or clang. `common/wokwi-api.h` is from [wokwi/inverter-chip](https://github.com/wokwi/inverter-chip) (MIT License, © 2022 Uri Shaked).
@@ -171,7 +204,9 @@ Requires gcc or clang. `common/wokwi-api.h` is from [wokwi/inverter-chip](https:
 
 ## Roadmap
 
-* Drive the sun from real solar position data (pvlib) and measured irradiance (NREL) instead of the built-in formulas and sliders.
+* Value energy by the hour (time-of-use rates and wholesale prices) instead of a flat price.
+* Add row-to-row shading and backtracking for utility arrays.
+* Drive the Wokwi chip's sun from real hourly NSRDB data instead of the built-in formulas and sliders.
 * Return to the east at night and wait for sunrise.
 * Stop commanding moves when a servo is already at its limit.
 * Model the servos' electrical load and supply droop.

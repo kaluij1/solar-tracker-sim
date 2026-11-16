@@ -1,0 +1,5 @@
+scenario,pan_moves,tilt_moves,pan_reversals,tilt_reversals,mean_error_deg,p95_error_deg,capture_pct,annual_loss_pct,annual_loss_kwh,total_moves,total_reversals,moves_vs_calculated
+"Clear, light sensors",248,111,1,2,1.64,2.0,99.96,0.03241711815603884,3.877537817258227,359,3,1.4246031746031746
+"Cloudy, light sensors, raw",1525,1441,355,394,2.25,3.9,99.91,0.0585286776117577,7.000843188506207,2966,749,11.76984126984127
+"Cloudy, light sensors, filtered",284,125,5,2,3.87,6.5,99.73,0.16919139604383132,20.237642141932906,409,7,1.623015873015873
+"Cloudy, calculated sun position",171,81,1,2,0.33,0.6,100.0,0.003615608291868903,0.43247699615465146,252,3,1.0

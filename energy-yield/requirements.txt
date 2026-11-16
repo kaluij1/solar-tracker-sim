@@ -1,0 +1,3 @@
+pvlib>=0.16
+pandas
+matplotlib
