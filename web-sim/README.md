@@ -15,14 +15,9 @@ Open `solar-sim.html` in any browser. No install, no server.
   hour but loses only 0.05% of the day's energy; the filtered one reverses 8 times an hour.
   Cloud strength (from the share of diffuse light) and sensor brightness (from total
   sunlight) are assumptions. Random noise is seeded, so a run repeats exactly.
-- **Against a real array:** yearly predicted ÷ measured energy for PVDAQ system 4, from
-  `energy-yield/validate_measured.py`.
 - **Solar farm:** a side view of tracker rows shading each other, with a switch between
   pointing at the sun and backtracking, an adjustable row spacing, and a full year computed
   for each.
-- **Payback:** how much extra a tracker can cost and still pay for itself, with sliders for
-  electricity price, tracker cost, upkeep, discount rate and system life. The starting
-  values are the ones in `energy-yield/economics.py`.
 - **Controller replay:** the single axis tracker's sensors, divider wall and servo, ported
   from the Wokwi chip (`single-axis/wokwi`). Turn up clouds and flicker and compare the
   original controller, the moving average with a deadband, and a calculated sun position.

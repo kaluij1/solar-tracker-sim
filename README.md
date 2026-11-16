@@ -24,9 +24,11 @@ satellite weather within 2% (1.9% low), and within 1% when given the measured su
 the panel. Single hours are far less certain. Details in
 [`energy-yield/README.md`](energy-yield/README.md#5-checked-against-a-real-system).
 
+**Finding your way around:** [`PROJECT_MAP.md`](PROJECT_MAP.md) shows how every file connects and where each headline number comes from.
+
 **Try it in a browser:** [`web-sim/`](web-sim/) is an interactive version of both parts.
 Open `web-sim/solar-sim.html` to watch four panel setups follow the sun on any day, and to
-replay the twitching controller with adjustable clouds and flicker. It also shows rows of trackers shading each other and backtracking, and has a payback calculator with adjustable prices. The controller can also run on a real day of weather: in Phoenix on 21 June the original controller reverses about 14,000 times an hour yet loses only 0.05% of the energy, so the real cost of twitching is servo movement, not power. Its physics agrees
+replay the twitching controller with adjustable clouds and flicker. It also shows rows of trackers shading each other and backtracking. The controller can also run on a real day of weather: in Phoenix on 21 June the original controller reverses about 14,000 times an hour yet loses only 0.05% of the energy, so the real cost of twitching is servo movement, not power. Its physics agrees
 with the pvlib model within 0.57% over a full year (see [`web-sim/README.md`](web-sim/README.md)).
 
 ## The answer
